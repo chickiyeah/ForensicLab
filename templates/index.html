@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Hero -->
+<section class="hero-section d-flex align-items-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="badge-pill mb-3"><i class="bi bi-shield-check me-1"></i>Digital Forensics Platform</div>
+        <h1 class="hero-title">디지털 증거,<br><span class="text-accent">정밀하게 분석</span>합니다</h1>
+        <p class="hero-sub mt-3 mb-4">
+          파일 시스템, 네트워크 트래픽, 센서 로그까지 —<br>
+          모든 디지털 흔적을 체계적으로 수집·분석·보고합니다.
+        </p>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="/tools/" class="btn btn-accent btn-lg px-4">
+            <i class="bi bi-play-circle me-2"></i>분석 시작
+          </a>
+          <a href="/intro" class="btn btn-outline-light btn-lg px-4">
+            <i class="bi bi-book me-2"></i>더 알아보기
+          </a>
+        </div>
+        <div class="terminal mt-4">
+          <span class="terminal-prompt">forensic@lab:~$</span>
+          <span class="terminal-text" id="termText"></span>
+          <span class="terminal-cursor">█</span>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+        <div class="hero-graphic">
+          <i class="bi bi-shield-lock"></i>
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="row text-center g-0">
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num">10,482</div>
+        <div class="stat-label">분석된 파일</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num">3,271</div>
+        <div class="stat-label">탐지된 이상 징후</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num">99.7%</div>
+        <div class="stat-label">분석 정확도</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">실시간 모니터링</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Cards -->
+<section class="features-section">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <span class="section-tag">Core Capabilities</span>
+      <h2 class="section-title mt-2">포렌식 분석 영역</h2>
+    </div>
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon fic-cyan"><i class="bi bi-fingerprint"></i></div>
+          <h5 class="feature-title">해시 검증</h5>
+          <p class="feature-desc">MD5·SHA-1·SHA-256·SHA-512 해시를 계산하고 두 값을 비교하여 디지털 증거의 무결성을 검증합니다.</p>
+          <a href="/tools/hash" class="feature-link">도구 실행 <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon fic-purple"><i class="bi bi-file-earmark-binary"></i></div>
+          <h5 class="feature-title">파일 카빙</h5>
+          <p class="feature-desc">RAW 디스크 이미지에서 GIF·JPEG·PNG·PDF·ZIP 파일 시그니처를 탐색하여 삭제된 파일을 복구합니다.</p>
+          <a href="/tools/carve" class="feature-link">도구 실행 <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon fic-amber"><i class="bi bi-hdd"></i></div>
+          <h5 class="feature-title">MBR 분석</h5>
+          <p class="feature-desc">디스크 이미지의 MBR 파티션 테이블을 파싱하고 VBR 시그니처를 스캔하여 파티션 구조를 시각화합니다.</p>
+          <a href="/tools/mbr" class="feature-link">도구 실행 <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon fic-green"><i class="bi bi-braces"></i></div>
+          <h5 class="feature-title">문자열 추출</h5>
+          <p class="feature-desc">바이너리 파일에서 ASCII·Unicode 문자열을 추출합니다. 악성코드 분석·암호 탐지에 활용됩니다.</p>
+          <a href="/tools/strings" class="feature-link">도구 실행 <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card">
+          <div class="feature-icon fic-red"><i class="bi bi-journal-text"></i></div>
+          <h5 class="feature-title">로그 분석</h5>
+          <p class="feature-desc">Apache·Syslog·Windows Event 로그를 자동 파싱하여 공격 패턴과 이상 접근을 탐지합니다.</p>
+          <a href="/tools/log" class="feature-link">도구 실행 <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+const lines = [
+  'analyzing packet capture... 3,271 anomalies found',
+  'verifying file integrity hash... OK',
+  'scanning log entries... 10,482 records processed',
+  'timeline reconstruction complete',
+
+];
+let li = 0, ci = 0, deleting = false;
+const el = document.getElementById('termText');
+function type() {
+  const line = lines[li];
+  if (!deleting) {
+    el.textContent = line.slice(0, ++ci);
+    if (ci === line.length) { deleting = true; setTimeout(type, 2000); return; }
+  } else {
+    el.textContent = line.slice(0, --ci);
+    if (ci === 0) { deleting = false; li = (li + 1) % lines.length; }
+  }
+  setTimeout(type, deleting ? 30 : 60);
+}
+type();
+</script>
+
+{% endblock %}

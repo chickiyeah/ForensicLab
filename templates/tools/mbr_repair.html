@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-danger small fw-bold">MBR 복구</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-hdd-stack me-2 text-danger"></i>MBR 복구</h1>
+    <p class="page-sub">손상된 MBR 파티션 테이블을 VBR 시그니처 스캔으로 재건합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- ── LOCAL SCRIPT DOWNLOAD ───────────────────────────────────────────── -->
+  <div class="local-script-banner mb-4">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8">
+        <h6 class="mb-1">
+          <i class="bi bi-pc-display me-2 text-accent"></i>
+          내 PC에 연결된 디스크를 복구하려면?
+        </h6>
+        <p class="text-dim small mb-1">
+          웹 브라우저는 보안 정책상 로컬 디스크에 직접 접근할 수 없습니다.
+          아래 스크립트를 다운로드하여 <strong>본인 PC에서 직접 실행</strong>하세요.
+          Python 3.6 이상만 있으면 별도 설치 없이 동작합니다.
+        </p>
+        <div class="disclaimer-inline">
+          <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+          <strong>이 스크립트 사용으로 인한 모든 결과(데이터 손실, 시스템 손상 등)의 책임은 사용자 본인에게 있습니다.</strong>
+          다운로드 시 이에 동의하는 것으로 간주합니다.
+        </div>
+      </div>
+      <div class="col-lg-4 text-lg-end">
+        <a href="/tools/mbr-repair/download-script" class="btn btn-accent">
+          <i class="bi bi-download me-2"></i>스크립트 다운로드 (.py)
+        </a>
+      </div>
+    </div>
+
+    <!-- 사용법 -->
+    <div class="script-usage mt-3">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="usage-block">
+            <div class="usage-os"><i class="bi bi-windows me-1"></i>Windows</div>
+            <pre class="usage-code"># 1. 관리자 권한으로 CMD/PowerShell 실행
+# 2. 스크립트가 있는 폴더로 이동
+python forensiclab_mbr_repair.py</pre>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="usage-block">
+            <div class="usage-os"><i class="bi bi-terminal me-1"></i>Linux / macOS</div>
+            <pre class="usage-code"># root 권한 필요
+sudo python3 forensiclab_mbr_repair.py</pre>
+          </div>
+        </div>
+      </div>
+      <div class="usage-flow mt-2">
+        <span class="flow-step"><i class="bi bi-1-circle me-1"></i>스크립트 실행</span>
+        <i class="bi bi-arrow-right text-dim mx-2"></i>
+        <span class="flow-step"><i class="bi bi-2-circle me-1"></i>디스크 목록 표시 (OS 디스크 자동 제외)</span>
+        <i class="bi bi-arrow-right text-dim mx-2"></i>
+        <span class="flow-step"><i class="bi bi-3-circle me-1"></i>VBR 스캔 → 파티션 미리보기</span>
+        <i class="bi bi-arrow-right text-dim mx-2"></i>
+        <span class="flow-step"><i class="bi bi-4-circle me-1"></i>YES 입력 → MBR 기록</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider mb-4">
+
+  <!-- ── DANGER WARNING ─────────────────────────────────────────────────── -->
+  <div class="danger-banner mb-4">
+    <div class="danger-banner-head">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <strong>경고 — 이 도구는 디스크에 직접 씁니다</strong>
+    </div>
+    <ul class="danger-list">
+      <li>MBR 복구는 디스크의 파티션 테이블(섹터 0, 오프셋 0x1BE~0x1FD)을 <strong>덮어씁니다.</strong></li>
+      <li>잘못된 파티션 테이블이 기록되면 <strong>운영체제 부팅 불가 또는 데이터 손실</strong>이 발생할 수 있습니다.</li>
+      <li>반드시 사전에 <strong>이미지 백업(dd, FTK Imager 등)</strong>을 수행하세요.</li>
+      <li>디스크 이미지 파일(.001, .img 등)을 업로드하면 이미지 파일 내에서만 수정됩니다.</li>
+      <li>장치 경로(<code>/dev/sda</code> 등)를 사용할 경우 <strong>실제 물리 디스크</strong>에 즉시 반영됩니다.</li>
+      <li>컨테이너에서 물리 장치 접근 시 <strong>--privileged</strong> 또는 <strong>--device</strong> 옵션이 필요합니다.</li>
+    </ul>
+  </div>
+
+  <div class="row g-4">
+    <!-- ── Left: Input form ────────────────────────────────────────────── -->
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>입력 소스</h6>
+
+        {% if not preview %}
+        <!-- Step 1: choose source -->
+        <form method="POST" enctype="multipart/form-data" id="previewForm">
+          <input type="hidden" name="action" value="preview">
+
+          <!-- Tab toggle -->
+          <div class="src-tabs mb-3">
+            <button type="button" class="src-tab active" data-target="tab-file">
+              <i class="bi bi-file-earmark me-1"></i>이미지 파일
+            </button>
+            <button type="button" class="src-tab" data-target="tab-dev">
+              <i class="bi bi-hdd me-1"></i>장치 경로
+            </button>
+          </div>
+
+          <div id="tab-file" class="src-panel mb-3">
+            <label class="form-label-sm">디스크 이미지 업로드</label>
+            <input type="file" name="file" class="form-control">
+            <div class="form-hint">.001 .img .dd .raw .bin — 업로드 후 서버 임시 파일에 저장됩니다.</div>
+          </div>
+
+          <div id="tab-dev" class="src-panel mb-3" style="display:none">
+            <!-- 장치 스캔 버튼 -->
+            <button type="button" class="btn btn-outline-accent w-100 mb-2"
+                    id="btnScanDev" onclick="scanDevices()">
+              <i class="bi bi-search me-1"></i>서버 연결 장치 스캔
+            </button>
+
+            <!-- 스캔 결과 -->
+            <div id="devList" class="dev-list mb-2" style="display:none"></div>
+
+            <!-- 수동 입력 (대안) -->
+            <label class="form-label-sm mt-1">직접 입력</label>
+            <input type="text" name="device_path" id="devPathInput"
+                   class="form-control" placeholder="/dev/sdb">
+            <div class="form-hint">
+              <i class="bi bi-info-circle me-1"></i>
+              서버 OS 디스크는 스캔 목록에 표시되지 않으며, 직접 입력해도 서버에서 차단됩니다.
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-danger w-100 mt-2">
+            <i class="bi bi-search me-1"></i>파티션 스캔 (읽기 전용)
+          </button>
+        </form>
+
+        {% else %}
+        <!-- Step 2: confirm repair -->
+        <div class="result-meta mb-3">
+          <i class="bi bi-file-earmark me-1"></i>{{ preview.label }}<br>
+          <i class="bi bi-database me-1"></i>{{ "{:,}".format(preview.size) }} bytes
+        </div>
+
+        {% if preview.can_repair %}
+        <form method="POST" id="repairForm">
+          <input type="hidden" name="action"     value="repair">
+          <input type="hidden" name="write_path" value="{{ preview.write_path }}">
+
+          <div class="confirm-box mb-3">
+            <label class="check-pill">
+              <input type="checkbox" id="chkConfirm" name="confirmed" value="1">
+              <span>위 경고를 모두 읽었으며, 이 작업이 <strong>되돌릴 수 없음</strong>을 이해합니다.</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-danger w-100" id="btnRepair" disabled>
+            <i class="bi bi-lightning-fill me-1"></i>MBR 복구 실행
+          </button>
+        </form>
+        {% else %}
+        <div class="alert-error mt-2">
+          <i class="bi bi-x-circle me-2"></i>복구 가능한 파티션을 찾지 못했습니다.
+        </div>
+        {% endif %}
+
+        <a href="/tools/mbr-repair" class="btn btn-outline-light w-100 mt-2">
+          <i class="bi bi-arrow-left me-1"></i>다시 선택
+        </a>
+        {% endif %}
+      </div>
+
+      <div class="info-box mt-3">
+        <h6><i class="bi bi-info-circle me-2"></i>복구 원리</h6>
+        <p>
+          MBR(0번 섹터)의 파티션 테이블이 손상되어도 각 파티션 첫 섹터인
+          VBR(Volume Boot Record)의 OEM ID 시그니처(<code>NTFS</code>,
+          <code>MSDOS5.0</code>)가 남아있으면 LBA·크기를 추출하여
+          MBR 파티션 테이블을 재건할 수 있습니다.
+        </p>
+        <p class="mt-2">FAT32 백업 섹터(LBA+6) 및 NTFS 백업 섹터(LBA+size)는
+          자동으로 필터링합니다.</p>
+      </div>
+    </div>
+
+    <!-- ── Right: Results ─────────────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+      {% if error %}
+      <div class="alert-error mb-3">
+        <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+      </div>
+      {% endif %}
+
+      {% if success %}
+      <!-- ── Success ──────────────────────────────────────────────────── -->
+      <div class="success-banner mb-3">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>MBR 복구 완료</strong> — {{ success.count }}개의 파티션을 재건했습니다.
+        <div class="text-dim small mt-1">대상: {{ success.path }}</div>
+      </div>
+
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-table me-2"></i>기록된 파티션 테이블</h6>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>파일시스템</th><th>타입</th><th>LBA 시작</th><th>LBA 크기</th><th>용량</th><th>오프셋</th></tr></thead>
+            <tbody>
+              {% for p in success.parts %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge-type">{{ p.name }}</span></td>
+                <td><code>{{ p.type_hex }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba) }}</code></td>
+                <td><code>{{ "{:,}".format(p.size) }}</code></td>
+                <td>{{ p.size_mb }} MB</td>
+                <td><code>{{ p.byte_offset }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% elif preview %}
+      <!-- ── Preview ─────────────────────────────────────────────────── -->
+
+      <!-- Current MBR state -->
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title">
+          <i class="bi bi-hdd me-2"></i>현재 MBR 상태
+          <span class="ms-2 {{ 'badge-ok' if preview.curr_valid else 'badge-bad' }}">
+            Boot Sig: {{ '55AA ✓ 유효' if preview.curr_valid else '유효하지 않음 ✗' }}
+          </span>
+        </h6>
+        {% if preview.curr_parts %}
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>슬롯</th><th>타입</th><th>LBA 시작</th><th>LBA 크기</th><th>용량</th></tr></thead>
+            <tbody>
+              {% for p in preview.curr_parts %}
+              <tr>
+                <td>{{ p.slot }}</td>
+                <td><span class="badge-type">{{ p.type_name }}</span> <code class="text-dim small">{{ p.type_hex }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba_start) }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba_size) }}</code></td>
+                <td>{{ p.size_mb }} MB</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-2 text-dim">파티션 테이블이 비어있거나 손상됨</div>
+        {% endif %}
+      </div>
+
+      <!-- Scan results -->
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-radar me-2"></i>VBR 스캔 결과 — 복구 예정 파티션</h6>
+
+        {% if preview.found %}
+        <div class="repair-arrow mb-2">
+          <i class="bi bi-arrow-down-circle text-accent me-2"></i>
+          다음 파티션을 MBR(오프셋 0x1BE)에 기록합니다:
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>파일시스템</th><th>타입</th><th>LBA 시작</th><th>LBA 크기</th><th>용량</th><th>VBR 오프셋</th></tr></thead>
+            <tbody>
+              {% for p in preview.found %}
+              <tr class="row-highlight">
+                <td>{{ loop.index }}</td>
+                <td><span class="badge-type">{{ p.name }}</span></td>
+                <td><code>{{ p.type_hex }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba) }}</code></td>
+                <td><code>{{ "{:,}".format(p.size) }}</code></td>
+                <td>{{ p.size_mb }} MB</td>
+                <td><code>{{ p.byte_offset }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-3 text-dim">
+          <i class="bi bi-search me-2"></i>
+          VBR 시그니처(NTFS, MSDOS5.0)를 찾지 못했습니다.<br>
+          <span class="small">파일 시스템이 심각하게 손상되었거나 지원하지 않는 형식일 수 있습니다.</span>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if preview.can_repair %}
+      <div class="warning-note">
+        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+        위 내용을 확인하세요. 왼쪽의 동의 체크박스를 선택 후 복구를 실행합니다.
+        <strong>복구 후 원래 MBR로 되돌리는 기능은 제공되지 않습니다.</strong>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Empty state -->
+      <div class="empty-state">
+        <i class="bi bi-hdd-stack"></i>
+        <p>디스크 이미지를 업로드하거나 장치 경로를 입력하면<br>
+           VBR 시그니처를 스캔하여 복구 가능한 파티션을 표시합니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab toggle ────────────────────────────────────────────────────────────
+document.querySelectorAll('.src-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.src-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.src-panel').forEach(p => p.style.display = 'none');
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.target).style.display = '';
+  });
+});
+
+// ── Confirm checkbox enables button ──────────────────────────────────────
+const chk = document.getElementById('chkConfirm');
+const repairBtn = document.getElementById('btnRepair');
+if (chk && repairBtn) {
+  chk.addEventListener('change', () => repairBtn.disabled = !chk.checked);
+}
+
+// ── Device scanner ────────────────────────────────────────────────────────
+function scanDevices() {
+  const list = document.getElementById('devList');
+  const scanBtn = document.getElementById('btnScanDev');
+  list.style.display = 'block';
+  list.innerHTML = '<div class="text-center py-2 text-dim"><div class="spinner"></div> 스캔 중...</div>';
+  scanBtn.disabled = true;
+
+  fetch('/tools/mbr-repair/devices')
+    .then(r => r.json())
+    .then(data => {
+      scanBtn.disabled = false;
+      if (data.error) {
+        list.innerHTML = `<div class="alert-error">${data.error}</div>`;
+        return;
+      }
+      const devs = data.devices || [];
+      if (devs.length === 0) {
+        list.innerHTML = '<div class="text-dim text-center py-2">연결된 외부 장치가 없습니다.</div>';
+        return;
+      }
+
+      const external = devs.filter(d => !d.is_root);
+      const system   = devs.filter(d =>  d.is_root);
+
+      let html = '';
+
+      if (external.length) {
+        html += '<div class="dev-section-label">외부 연결 장치</div>';
+        external.forEach(d => {
+          const icon = d.tran === 'usb' ? 'bi-usb-symbol' : 'bi-hdd-fill';
+          const badge = d.removable ? '<span class="badge-usb">USB/외장</span>' : '';
+          html += `
+            <div class="dev-item" onclick="selectDevice('${d.path}')">
+              <i class="bi ${icon} dev-icon text-accent"></i>
+              <div class="dev-info">
+                <div class="dev-path">${d.path} ${badge}</div>
+                <div class="dev-meta">${d.model} · ${d.size_hr} · ${d.tran.toUpperCase()}</div>
+              </div>
+              <i class="bi bi-arrow-right-circle dev-arrow"></i>
+            </div>`;
+        });
+      }
+
+      if (system.length) {
+        html += '<div class="dev-section-label dev-section-sys">서버 디스크 (선택 불가)</div>';
+        system.forEach(d => {
+          html += `
+            <div class="dev-item dev-item-disabled" title="서버 OS 디스크 — 수정 불가">
+              <i class="bi bi-hdd-fill dev-icon text-dim"></i>
+              <div class="dev-info">
+                <div class="dev-path text-dim">${d.path} <span class="badge-locked">SYSTEM</span></div>
+                <div class="dev-meta text-dim">${d.model} · ${d.size_hr}${d.mounted ? ' · 마운트됨' : ''}</div>
+              </div>
+              <i class="bi bi-lock-fill text-dim"></i>
+            </div>`;
+        });
+      }
+
+      list.innerHTML = html;
+    })
+    .catch(e => {
+      scanBtn.disabled = false;
+      list.innerHTML = `<div class="alert-error">스캔 실패: ${e}</div>`;
+    });
+}
+
+function selectDevice(path) {
+  document.getElementById('devPathInput').value = path;
+  // 탭이 장치 탭으로 전환돼 있는지 확인 후 포커스
+  document.getElementById('devPathInput').focus();
+}
+</script>
+{% endblock %}

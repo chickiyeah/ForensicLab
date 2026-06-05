@@ -1,0 +1,39 @@
+# ForensicLab Local Scripts — Checksums
+# Generated: 2026-06-01
+# Verify before execution:
+#   Windows : Get-FileHash <file> -Algorithm SHA256
+#   Linux   : sha256sum <file>
+#   macOS   : shasum -a 256 <file>
+
+## SHA-256
+
+CC833EF297CE521525281D8C8816636EC4498CE6BD45CAAFCE70DD5FAA31B671  forensiclab_browser_artifacts.py
+77D5B72C4BFD01DEEFED5B3289B2F55A6A6C3992A2CF97E8C18FCE85485058F3  forensiclab_disk_imager.py
+084CC30E9C85CC7EFC10103F633128730CF4BD41725FFC8676FF917A48FAC63E  forensiclab_eventlog_collector.py
+A32AF73503E2BBAD977C5D9E44397290A7D68672E37F8C1DC87DDB3B1FBB4B04  forensiclab_mbr_repair.py
+B0D916E64B7FEE5EC91313E598C67EB189CDAE248E394C3D44A7C9EE650576DB  forensiclab_ram_dumper.py
+623221B8AF7C56473D818D9F55E01DE3B3607FA1F9D91D13ABC374822C34EBAB  forensiclab_registry_collector.py
+3E1CF0AAAD5BE877F56664CDDF548FC04F3B86E2B9992A9B74341587B5207145  forensiclab_triage_collector.py
+51349E375B210FDC7CD206A027E83BEB3B1EAB66842D35A3608367CD05DB361F  forensiclab_usb_history.py
+
+## MD5 (보조 검증용 — 보안 검증에는 SHA-256 사용 권장)
+
+4795FFD3D4B4EDDB5C4AD41D5CCFB19B  forensiclab_browser_artifacts.py
+F4DB63E401135954F8B2FBDEFA540BCA  forensiclab_disk_imager.py
+1C2BD52F4BCE13FF2FD495485047D05C  forensiclab_eventlog_collector.py
+54A89A77B5EA4A8B38B62C2AE299F39C  forensiclab_mbr_repair.py
+739951578EAD63AFD7FB24B343949B21  forensiclab_ram_dumper.py
+0E267F841460C4F50290D15A9A8AAFF6  forensiclab_registry_collector.py
+C1802B33936AF9D85460EB8589204791  forensiclab_triage_collector.py
+DF8CD41E18A488BA38215653479CA5A8  forensiclab_usb_history.py
+
+## 파일 크기
+
+forensiclab_browser_artifacts.py    8,708 bytes
+forensiclab_disk_imager.py          4,020 bytes
+forensiclab_eventlog_collector.py   5,256 bytes
+forensiclab_mbr_repair.py          15,589 bytes
+forensiclab_ram_dumper.py           5,625 bytes
+forensiclab_registry_collector.py   4,918 bytes
+forensiclab_triage_collector.py     7,203 bytes
+forensiclab_usb_history.py          6,111 bytes

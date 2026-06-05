@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">DNS 종합 조회</span></div>
+<h1 class="page-title"><i class="bi bi-broadcast me-2 text-accent"></i>DNS 종합 조회</h1>
+<p class="page-sub">A·AAAA·MX·NS·TXT·SOA·CAA·SPF·DMARC 한 번에.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel mb-3"><form method="POST">
+<input type="text" name="domain" class="form-control mb-3" placeholder="example.com" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-broadcast me-1"></i>조회</button>
+</form></div>
+{% if result %}
+{% for rtype, recs in result.records.items() %}{% if recs %}
+<div class="tool-panel mb-2"><h6 class="panel-title">{{ rtype }} ({{ recs|length }})</h6>
+{% for r in recs %}<div style="font-family:monospace; font-size:.82rem; word-break:break-all;">{{ r }}</div>{% endfor %}
+</div>{% endif %}{% endfor %}
+{% if result.email_auth %}<div class="tool-panel mb-2"><h6 class="panel-title">이메일 인증</h6>
+{% for k, v in result.email_auth.items() %}<div><strong>{{ k }}:</strong> <code style="font-size:.78rem; word-break:break-all;">{{ v }}</code></div>{% endfor %}
+</div>{% endif %}{% endif %}
+</div></div></div>{% endblock %}

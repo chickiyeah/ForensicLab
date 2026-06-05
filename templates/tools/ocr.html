@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">이미지 OCR</span></div>
+<h1 class="page-title"><i class="bi bi-card-text me-2 text-accent"></i>이미지 OCR</h1>
+<p class="page-sub">tesseract OCR로 이미지에서 텍스트를 추출합니다 (한국어·영어 자동 인식).</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept="image/*" required>
+<label class="form-label-sm">언어</label>
+<select name="lang" class="form-select mb-3">
+<option value="eng+kor" selected>영어 + 한국어</option>
+<option value="kor">한국어만</option><option value="eng">영어만</option>
+<option value="jpn">일본어</option><option value="chi_sim">중국어 간체</option>
+</select>
+<button class="btn btn-accent w-100"><i class="bi bi-card-text me-1"></i>OCR 실행</button>
+</form>
+<div class="text-dim small mt-3"><i class="bi bi-info-circle me-1"></i>tesseract 시스템 패키지 + pytesseract 설치 필요.</div>
+</div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ result.image_size }} · 단어 {{ result.word_count }} · 글자 {{ result.char_count }}</span>
+<a href="/tools/ocr" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 이미지</a></div>
+<div class="tool-panel"><pre style="background:var(--bg); padding:1rem; border-radius:.4rem; white-space:pre-wrap; word-break:break-word; font-size:.86rem; max-height:600px; overflow:auto; margin:0;">{{ result.text }}</pre></div>
+{% endif %}
+</div>{% endblock %}

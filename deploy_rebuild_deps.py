@@ -1,0 +1,22 @@
+"""의존성 보강 재빌드"""
+import paramiko, time
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('10.8.0.17', username='ruddls030', password='dlstn0722')
+sftp = ssh.open_sftp()
+sftp.put(r'E:\forensic\requirements.txt', '/home/ruddls030/forensic/flask/requirements.txt')
+sftp.put(r'E:\forensic\Dockerfile', '/home/ruddls030/forensic/flask/Dockerfile')
+sftp.close()
+print('  OK requirements.txt + Dockerfile')
+print('  Docker 재빌드 중...')
+cmd = 'cd /home/ruddls030/forensic && docker compose down 2>&1 | tail -3 && docker compose build flask 2>&1 | tail -60 && docker compose up -d 2>&1 | tail -5'
+_, out, errs = ssh.exec_command(cmd, timeout=1500)
+print(out.read().decode(errors='replace'))
+es = errs.read().decode(errors='replace')
+if es: print('STDERR:', es[:800])
+time.sleep(10)
+_, out, _ = ssh.exec_command('docker logs --tail 15 forensic-flask 2>&1')
+print('\n--- container logs ---')
+print(out.read().decode(errors='replace'))
+ssh.close()
+print('done')

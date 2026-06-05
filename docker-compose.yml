@@ -1,0 +1,30 @@
+services:
+  flask:
+    build: ./flask
+    container_name: forensic-flask
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - ./flask:/app
+    environment:
+      - APP_CONFIG_FILE=/app/config/production.py
+      - HONEYTRAP_WEBHOOK=${HONEYTRAP_WEBHOOK:-}
+    networks:
+      - app-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: forensic-nginx
+    restart: unless-stopped
+    ports:
+      - "405:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - flask
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">PDF 악성 분석</span></div>
+<h1 class="page-title"><i class="bi bi-file-earmark-pdf-fill me-2 text-accent"></i>PDF 악성 분석</h1>
+<p class="page-sub">PDF 내부의 /JavaScript·/OpenAction·/Launch·/EmbeddedFile 등 위험 객체와 URL을 탐지합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept=".pdf" required>
+<button class="btn btn-accent w-100"><i class="bi bi-shield-check me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3 flex-wrap"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ "{:,}".format(result.file_size) }} B · PDF v{{ result.version }}</span>
+<span class="ms-auto"></span>
+<span style="color:{% if result.suspicious %}#ef4444{% else %}#22c55e{% endif %}; font-weight:700;">{{ result.verdict }}</span>
+<a href="/tools/pdfscan" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+
+{% if result.suspicious %}
+<div class="tool-panel mb-3" style="border:2px solid #ef444466; background:rgba(239,68,68,.05);">
+<h6 class="panel-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>의심 패턴 ({{ result.suspicious|length }})</h6>
+<ul class="mb-0" style="font-size:.85rem;">{% for s in result.suspicious %}<li>{{ s }}</li>{% endfor %}</ul></div>
+{% endif %}
+
+<div class="row g-3 mb-3"><div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-tag me-2"></i>PDF 객체 카운트</h6>
+<table class="table table-sm" style="font-size:.85rem;">
+<tr><td class="text-dim">전체 객체</td><td><strong>{{ result.object_count }}</strong></td></tr>
+<tr><td class="text-dim">스트림</td><td>{{ result.stream_count }}</td></tr>
+<tr><td class="text-dim">필터</td><td>{{ result.filter_count }}</td></tr>
+{% for k, v in result.counts.items() %}{% if v > 0 %}
+<tr><td><code style="color:{% if k in ('/JavaScript','/JS','/OpenAction','/AA','/Launch') %}#ef4444{% else %}var(--accent){% endif %}">{{ k }}</code></td><td><strong>{{ v }}</strong></td></tr>
+{% endif %}{% endfor %}</table></div></div>
+
+<div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-link-45deg me-2"></i>URL ({{ result.urls|length }})</h6>
+<div style="max-height:400px; overflow-y:auto; font-size:.78rem;">
+{% for u in result.urls %}<div class="p-1" style="border-bottom:1px solid var(--border); word-break:break-all;">
+<code>{{ u }}</code></div>{% endfor %}
+{% if not result.urls %}<div class="text-dim">URL 없음</div>{% endif %}
+</div></div></div></div>
+{% endif %}
+</div>{% endblock %}

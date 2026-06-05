@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">LNK 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-link-45deg me-2 text-accent"></i>LNK 바로가기 분석</h1>
+    <p class="page-sub">.lnk 파일에서 대상 경로·작업폴더·인수·MAC 주소·볼륨 시리얼·생성/접근/수정 시각을 추출합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  {% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+
+  {% if not result %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>.lnk 파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" multiple class="form-control mb-3" accept=".lnk" required>
+          <button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <strong>{{ result.filename }}</strong>
+    <span class="text-dim small">({{ result.file_size }} bytes)</span>
+    <span class="ms-auto"><a href="/tools/lnk" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>새 파일</a></span>
+  </div>
+
+  <div class="tool-panel mb-3" style="border-left:4px solid var(--accent);">
+    <div class="text-dim small mb-1">대상</div>
+    <div style="font-size:1.05rem; font-weight:700; font-family:monospace; color:var(--accent); word-break:break-all;">{{ result.target }}</div>
+    {% if result.arguments %}<div class="mt-2"><span class="text-dim small">인수:</span> <code>{{ result.arguments }}</code></div>{% endif %}
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-file-earmark me-2"></i>경로 / 인수</h6>
+        <table class="table table-sm" style="font-size:.84rem;">
+          {% if result.local_path %}<tr><td class="text-dim">로컬 경로</td><td><code>{{ result.local_path }}</code></td></tr>{% endif %}
+          {% if result.network_path %}<tr><td class="text-dim">네트워크 경로</td><td><code>{{ result.network_path }}</code></td></tr>{% endif %}
+          {% if result.relative_path %}<tr><td class="text-dim">상대 경로</td><td><code>{{ result.relative_path }}</code></td></tr>{% endif %}
+          {% if result.working_dir %}<tr><td class="text-dim">작업 폴더</td><td><code>{{ result.working_dir }}</code></td></tr>{% endif %}
+          {% if result.icon_location %}<tr><td class="text-dim">아이콘</td><td><code>{{ result.icon_location }}</code></td></tr>{% endif %}
+          {% if result.name %}<tr><td class="text-dim">설명</td><td>{{ result.name }}</td></tr>{% endif %}
+          {% if result.target_size %}<tr><td class="text-dim">대상 크기</td><td>{{ result.target_size }} bytes</td></tr>{% endif %}
+          <tr><td class="text-dim">속성</td><td>{{ result.attributes }}</td></tr>
+          <tr><td class="text-dim">유니코드</td><td>{% if result.unicode %}예{% else %}아니오{% endif %}</td></tr>
+          <tr><td class="text-dim">플래그</td><td><code>{{ result.flags_raw }}</code></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-clock-history me-2"></i>대상 파일 타임스탬프</h6>
+        <table class="table table-sm" style="font-size:.84rem;">
+          <tr><td class="text-dim">생성</td><td><code>{{ result.create_time }}</code></td></tr>
+          <tr><td class="text-dim">접근</td><td><code>{{ result.access_time }}</code></td></tr>
+          <tr><td class="text-dim">수정</td><td><code>{{ result.write_time }}</code></td></tr>
+        </table>
+      </div>
+
+      {% if result.volume_label or result.drive_serial %}
+      <div class="tool-panel mt-2">
+        <h6 class="panel-title"><i class="bi bi-hdd-fill me-2"></i>볼륨 정보</h6>
+        <table class="table table-sm" style="font-size:.84rem;">
+          {% if result.volume_label %}<tr><td class="text-dim">레이블</td><td>{{ result.volume_label }}</td></tr>{% endif %}
+          {% if result.drive_serial %}<tr><td class="text-dim">시리얼</td><td><code>{{ result.drive_serial }}</code></td></tr>{% endif %}
+          {% if result.drive_type %}<tr><td class="text-dim">타입</td><td>{{ result.drive_type }}</td></tr>{% endif %}
+        </table>
+      </div>
+      {% endif %}
+
+      {% if result.mac_address %}
+      <div class="tool-panel mt-2" style="border-color:#f59e0b66;">
+        <h6 class="panel-title" style="color:#f59e0b"><i class="bi bi-shield-exclamation me-2"></i>추적 정보 (Tracker)</h6>
+        <table class="table table-sm" style="font-size:.84rem;">
+          <tr><td class="text-dim">MAC 주소</td><td><code style="color:#f59e0b">{{ result.mac_address }}</code></td></tr>
+          {% if result.machine_id %}<tr><td class="text-dim">머신 ID</td><td><code>{{ result.machine_id }}</code></td></tr>{% endif %}
+          {% if result.droid_birth %}<tr><td class="text-dim">DroidBirth</td><td><code style="font-size:.72rem">{{ result.droid_birth }}</code></td></tr>{% endif %}
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

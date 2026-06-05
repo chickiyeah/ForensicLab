@@ -1,0 +1,56 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Chain of Custody</span></div>
+<h1 class="page-title"><i class="bi bi-link-45deg me-2 text-accent"></i>Chain of Custody</h1>
+<p class="page-sub">변조 불가 증거 보관 체인 — SHA-256 해시 사슬</p></div></div>
+<div class="container pb-5">
+<div class="tool-panel mb-3" style="border:2px solid {% if verification.valid %}#22c55e{% else %}#ef4444{% endif %};">
+<div class="d-flex justify-content-between align-items-center">
+<div><h6 class="panel-title mb-1">체인 검증</h6>
+<span style="font-size:.9rem;">{% if verification.valid %}<i class="bi bi-check-circle-fill text-success"></i> 무결성 확인됨{% else %}<i class="bi bi-x-circle-fill text-danger"></i> 변조 감지!{% endif %}</span></div>
+<div class="text-end"><strong style="font-size:1.5rem;">{{ verification.entries }}</strong>
+<div class="text-dim small">엔트리</div></div></div>
+{% if verification.first %}<div class="text-dim small mt-2">최초 {{ verification.first }} · 최후 {{ verification.last }}</div>{% endif %}
+{% if verification.invalid %}<div class="mt-2 text-danger">
+{% for i in verification.invalid %}<div>엔트리 #{{ i.idx }}: {{ i.reason }}</div>{% endfor %}</div>{% endif %}
+</div>
+
+<div class="tool-panel mb-3"><h6 class="panel-title">증거 등록</h6>
+<form method="POST" enctype="multipart/form-data" action="/tools/coc/add" onsubmit="return false;" id="cocForm">
+<input type="file" name="file" class="form-control mb-2" id="cocFile" required>
+<select name="action" class="form-select mb-2">
+<option value="evidence_intake">증거 접수 (Intake)</option>
+<option value="custody_transfer">보관자 이관</option>
+<option value="analysis_started">분석 시작</option>
+<option value="analysis_completed">분석 완료</option>
+<option value="evidence_release">증거 반환</option>
+</select>
+<input type="text" name="note" class="form-control mb-2" placeholder="메모 (선택)">
+<button class="btn btn-accent w-100" onclick="submitCoc()"><i class="bi bi-plus me-1"></i>체인에 추가</button>
+</form>
+<div id="cocResult" class="mt-2"></div></div>
+
+<div class="tool-panel"><div class="d-flex justify-content-between mb-2">
+<h6 class="panel-title">최근 엔트리 ({{ entries|length }})</h6>
+<a href="/tools/coc/download" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>JSONL 다운로드</a></div>
+<div style="max-height:600px; overflow-y:auto;">
+{% for e in entries %}<details class="mb-1" style="background:var(--bg); border-radius:.35rem;">
+<summary style="padding:.4rem .6rem; cursor:pointer; font-size:.82rem;">
+<code class="text-dim small">{{ e.timestamp[:19] }}</code>
+<strong>{{ e.action }}</strong>
+<span class="text-dim small">{{ e.metadata.get('filename', '') }}</span></summary>
+<pre style="background:#0a0f1c; padding:.5rem; margin:0; font-size:.7rem;">{{ e | tojson(indent=2) }}</pre>
+</details>{% endfor %}</div></div>
+
+<script>
+async function submitCoc() {
+  const fd = new FormData(document.getElementById('cocForm'));
+  if (!document.getElementById('cocFile').files.length) { alert('파일 선택'); return; }
+  const r = await fetch('/tools/coc/add', { method: 'POST', body: fd });
+  const j = await r.json();
+  document.getElementById('cocResult').innerHTML =
+    '<div class="alert alert-success">엔트리 추가됨: ' + j.entry.hash.substr(0,16) + '...</div>';
+  setTimeout(()=>location.reload(), 2000);
+}
+</script>
+</div>{% endblock %}

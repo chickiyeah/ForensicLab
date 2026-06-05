@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Wordlist 생성</span></div>
+<h1 class="page-title"><i class="bi bi-list-ol me-2 text-accent"></i>Wordlist 생성</h1>
+<p class="page-sub">시드 + 규칙으로 비밀번호 사전 생성.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST">
+<label class="form-label-sm">시드 단어</label>
+<textarea name="seeds" class="form-control mb-3" rows="5" placeholder="password, admin, company"></textarea>
+<div class="row mb-2">
+<div class="col-6"><label><input type="checkbox" name="leet" checked> Leetspeak</label></div>
+<div class="col-6"><label><input type="checkbox" name="case" checked> 대소문자</label></div>
+<div class="col-6"><label><input type="checkbox" name="years" checked> 연도</label></div>
+<div class="col-6"><label><input type="checkbox" name="numbers"> 숫자</label></div>
+<div class="col-6"><label><input type="checkbox" name="symbols"> 특수문자</label></div></div>
+<div class="row">
+<div class="col-6"><label class="form-label-sm">연도 From</label><input type="number" name="year_from" class="form-control mb-2" value="2020"></div>
+<div class="col-6"><label class="form-label-sm">연도 To</label><input type="number" name="year_to" class="form-control mb-2" value="2026"></div>
+<div class="col-6"><label class="form-label-sm">최소</label><input type="number" name="min_len" class="form-control mb-2" value="4"></div>
+<div class="col-6"><label class="form-label-sm">최대</label><input type="number" name="max_len" class="form-control mb-3" value="20"></div></div>
+<button class="btn btn-accent w-100"><i class="bi bi-list-ol me-1"></i>생성</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.count }}개</h6>
+<button class="btn btn-sm btn-outline-secondary mb-2" onclick="navigator.clipboard.writeText(document.getElementById('wl').textContent)"><i class="bi bi-clipboard me-1"></i>복사</button>
+<pre id="wl" style="background:var(--bg); padding:.5rem; font-size:.78rem; max-height:500px; overflow:auto; margin:0;">{% for w in result.words %}{{ w }}
+{% endfor %}</pre>
+</div>{% endif %}</div></div></div>{% endblock %}

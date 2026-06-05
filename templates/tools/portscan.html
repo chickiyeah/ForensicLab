@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">포트 스캐너</span></div>
+<h1 class="page-title"><i class="bi bi-ethernet me-2 text-accent"></i>포트 스캐너</h1>
+<p class="page-sub">단일 호스트 흔한 40+ 포트 검사 (안전 모드).</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="alert mb-3" style="background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); padding:.75rem 1rem; border-radius:.4rem;">
+<i class="bi bi-shield-exclamation me-2"></i><strong>주의:</strong> 본인 소유 또는 위임받은 호스트만 스캔하세요.</div>
+<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel mb-3"><form method="POST">
+<input type="text" name="host" class="form-control mb-3" placeholder="example.com 또는 IP" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-ethernet me-1"></i>스캔</button>
+</form></div>
+{% if result %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.host }} ({{ result.ip }}) — {% if result.is_private %}사설{% else %}공용{% endif %}</h6>
+<div class="text-dim small mb-2">{{ result.open_ports|length }}개 열림 / {{ result.closed_count }}개 닫힘 / {{ result.total_scanned }}개 스캔 / {{ result.duration }}초</div>
+<table class="table table-sm" style="font-size:.85rem;">
+<thead><tr class="text-dim"><th>포트</th><th>서비스</th><th>배너</th></tr></thead><tbody>
+{% for p in result.open_ports %}<tr><td><strong style="color:#22c55e">{{ p.port }}</strong></td>
+<td>{{ p.service }}</td>
+<td style="font-family:monospace; font-size:.72rem; word-break:break-all;">{{ p.banner }}</td>
+</tr>{% endfor %}</tbody></table></div>{% endif %}
+</div></div></div>{% endblock %}

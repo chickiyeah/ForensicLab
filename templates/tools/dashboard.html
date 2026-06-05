@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">분석 대시보드</span></div>
+<h1 class="page-title"><i class="bi bi-speedometer2 me-2 text-accent"></i>분석 대시보드</h1>
+<p class="page-sub">전체 사건·증거·발견 통계 시각화</p></div></div>
+<div class="container pb-5">
+<div class="row g-3 mb-3">
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:var(--accent); font-weight:700;">{{ stats.total_cases }}</div>
+<div class="text-dim small">전체 사건</div></div></div>
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:#22c55e; font-weight:700;">{{ stats.open_cases }}</div>
+<div class="text-dim small">진행중</div></div></div>
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:#6b7280; font-weight:700;">{{ stats.closed_cases }}</div>
+<div class="text-dim small">종료</div></div></div>
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:#a78bfa; font-weight:700;">{{ stats.total_evidence }}</div>
+<div class="text-dim small">증거</div></div></div>
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:#f59e0b; font-weight:700;">{{ stats.total_findings }}</div>
+<div class="text-dim small">발견사항</div></div></div>
+<div class="col-md-2"><div class="tool-panel text-center" style="padding:1rem;">
+<div style="font-size:2rem; color:#06b6d4; font-weight:700;">{{ stats.total_audit }}</div>
+<div class="text-dim small">감사 로그</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+<div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">심각도별 발견사항</h6>
+{% for sev in ['critical','high','medium','low'] %}{% if severity.get(sev) %}
+<div class="d-flex justify-content-between mb-1">
+<span style="color:{% if sev=='critical' %}#dc2626{% elif sev=='high' %}#ef4444{% elif sev=='medium' %}#f59e0b{% else %}#3b82f6{% endif %};">{{ sev }}</span>
+<strong>{{ severity.get(sev, 0) }}</strong></div>{% endif %}{% endfor %}
+</div></div>
+<div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">도구 사용 횟수</h6>
+{% for t, c in tool_usage.items() %}<div class="d-flex justify-content-between mb-1 small">
+<code style="font-size:.74rem;">{{ t.replace('tool_use:','') }}</code><strong>{{ c }}</strong></div>{% endfor %}
+{% if not tool_usage %}<div class="text-dim small">아직 활동 없음</div>{% endif %}
+</div></div></div>
+
+<div class="row g-3">
+<div class="col-md-6"><div class="tool-panel"><h6 class="panel-title">최근 사건</h6>
+{% for c in recent_cases %}<div class="d-flex justify-content-between p-1 small">
+<a href="/tools/case/{{ c.id }}" style="font-size:.84rem;"><code>{{ c.case_number }}</code> {{ c.name }}</a>
+<span class="text-dim">{{ c.created_at[:10] }}</span></div>{% endfor %}
+</div></div>
+<div class="col-md-6"><div class="tool-panel"><h6 class="panel-title">최근 발견</h6>
+{% for f in recent_findings %}<div class="d-flex justify-content-between p-1 small">
+<a href="/tools/case/{{ f.case_id }}" style="font-size:.84rem;">[{{ f.case_number }}] {{ f.title }}</a>
+<span class="tag" style="font-size:.7rem;">{{ f.severity }}</span></div>{% endfor %}
+</div></div></div>
+
+</div>{% endblock %}

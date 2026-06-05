@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Hex Viewer</span></div>
+<h1 class="page-title"><i class="bi bi-code me-2 text-accent"></i>Hex Viewer</h1>
+<p class="page-sub">파일 헥스 + ASCII 표시 및 패턴 검색.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<div class="row"><div class="col-6"><label class="form-label-sm">오프셋</label><input type="number" name="offset" class="form-control mb-3" value="0"></div>
+<div class="col-6"><label class="form-label-sm">길이</label><input type="number" name="length" class="form-control mb-3" value="1024"></div></div>
+<input type="text" name="search" class="form-control mb-3" placeholder="검색 (MZ 또는 0x4D5A)">
+<button class="btn btn-accent w-100"><i class="bi bi-code me-1"></i>표시</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-2"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ "{:,}".format(result.file_size) }} B · 오프셋 {{ result.offset }}</span>
+<a href="/tools/hex" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+{% if result.search_results %}<div class="tool-panel mb-2">
+<h6 class="panel-title">검색 결과 ({{ result.search_results|length }})</h6>
+<div style="max-height:200px; overflow-y:auto; font-family:monospace; font-size:.74rem;">
+{% for s in result.search_results %}<div><code style="color:var(--accent)">{{ s.offset }}</code> <code>{{ s.context }}</code></div>{% endfor %}
+</div></div>{% endif %}
+<div class="tool-panel"><pre style="background:var(--bg); padding:.5rem; font-family:monospace; font-size:.78rem; line-height:1.4; margin:0; overflow:auto;">{% for l in result.lines %}<span style="color:var(--accent)">{{ l.offset }}</span>  {{ l.hex }}  <span style="color:#94a3b8">{{ l.ascii }}</span>
+{% endfor %}</pre></div>
+{% endif %}</div>{% endblock %}

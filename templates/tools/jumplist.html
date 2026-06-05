@@ -1,0 +1,38 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">JumpList 분석</span></div>
+<h1 class="page-title"><i class="bi bi-bookmark-fill me-2 text-accent"></i>JumpList 분석</h1>
+<p class="page-sub">Windows .automaticDestinations-ms OLECF 컨테이너에서 DestList 스트림을 파싱해 최근 접근 파일·접근 횟수·시각·핀 상태를 추출.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" required>
+<div class="form-hint mb-3">%APPDATA%\Microsoft\Windows\Recent\AutomaticDestinations\&lt;AppID&gt;.automaticDestinations-ms</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3 flex-wrap align-items-center"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ "{:,}".format(result.file_size) }} B · 스트림 {{ result.streams|length }}개 · 엔트리 {{ result.entries|length }}개</span>
+<a href="/tools/jumplist" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+
+{% if result.entries %}
+<div class="tool-panel mb-3"><h6 class="panel-title"><i class="bi bi-clock-history me-2"></i>DestList 엔트리 ({{ result.n_entries or result.entries|length }} 중 핀 {{ result.n_pinned or 0 }})</h6>
+<table class="table table-sm" style="font-size:.8rem;">
+<thead><tr class="text-dim"><th>#</th><th>마지막 접근</th><th>접근 횟수</th><th>호스트</th><th>경로</th></tr></thead>
+<tbody>{% for e in result.entries %}<tr>
+<td>{{ e.idx }}</td><td><code>{{ e.last_access[:19] }}</code></td>
+<td><strong style="color:#f59e0b">{{ e.access_count }}</strong></td>
+<td>{{ e.hostname }}</td><td style="word-break:break-all;"><code>{{ e.path }}</code></td>
+</tr>{% endfor %}</tbody></table></div>
+{% endif %}
+
+<div class="tool-panel"><h6 class="panel-title"><i class="bi bi-list me-2"></i>전체 스트림</h6>
+<div style="max-height:300px; overflow-y:auto; font-size:.78rem;">
+{% for s in result.streams %}<div class="d-flex justify-content-between p-1" style="border-bottom:1px solid var(--border);">
+<code>{{ s.name }}</code><span class="text-dim">{{ s.size }} B</span></div>{% endfor %}
+</div></div>
+{% endif %}
+</div>{% endblock %}

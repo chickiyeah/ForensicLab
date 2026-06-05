@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">URL 안전 분석</span></div>
+<h1 class="page-title"><i class="bi bi-link me-2 text-accent"></i>URL 안전 분석</h1>
+<p class="page-sub">Punycode·피싱·HTTP·단축 URL 탐지</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel"><form method="POST">
+<input type="text" name="url" class="form-control mb-3" placeholder="https://example.com/path?q=1" required>
+<button class="btn btn-accent w-100">분석</button></form></div>
+{% if result %}<div class="tool-panel mt-3"><h6 class="panel-title">결과 (안전도 {{ result.safety_score }}/100)</h6>
+<table class="table table-sm" style="font-size:.84rem;">
+<tr><td class="text-dim">원본</td><td><code style="word-break:break-all;">{{ result.original }}</code></td></tr>
+<tr><td class="text-dim">디코드</td><td><code style="word-break:break-all;">{{ result.decoded }}</code></td></tr>
+<tr><td class="text-dim">호스트</td><td>{{ result.host }}</td></tr>
+<tr><td class="text-dim">스키마</td><td>{{ result.scheme }}</td></tr>
+<tr><td class="text-dim">포트</td><td>{{ result.port }}</td></tr>
+<tr><td class="text-dim">경로</td><td><code>{{ result.path }}</code></td></tr>
+{% if result.query %}<tr><td class="text-dim">쿼리</td><td>{% for k, v in result.query.items() %}<code class="me-2">{{ k }}={{ v }}</code>{% endfor %}</td></tr>{% endif %}
+</table>{% if result.warnings %}<div class="mt-2 p-2" style="background:rgba(245,158,11,.08); border-radius:.4rem;">
+{% for w in result.warnings %}<div>⚠️ {{ w }}</div>{% endfor %}</div>{% endif %}
+</div>{% endif %}</div></div></div>{% endblock %}

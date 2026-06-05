@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">GeoIP / IP 분류</span></div>
+<h1 class="page-title"><i class="bi bi-geo-alt-fill me-2 text-accent"></i>GeoIP / IP 분류</h1>
+<p class="page-sub">IP → 사설/공용·RIR·역방향 DNS</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST">
+<textarea name="ips" class="form-control mb-3" rows="10" placeholder="8.8.8.8&#10;192.168.1.1"></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-geo-alt me-1"></i>조회</button></form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<table class="table table-sm" style="font-size:.84rem;"><thead><tr class="text-dim"><th>IP</th><th>분류</th><th>RIR</th><th>호스트명</th></tr></thead><tbody>
+{% for ip in result.ips %}<tr><td><code>{{ ip.ip }}</code></td><td>{{ ip.class or '' }}</td>
+<td>{{ ip.rir_estimate or '' }}</td><td><code>{{ ip.hostname or '' }}</code></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}</div></div></div>{% endblock %}

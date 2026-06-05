@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Office 365 Activity</span></div>
+<h1 class="page-title"><i class="bi bi-cloud-fill me-2 text-accent"></i>Office 365 Activity</h1>
+<p class="page-sub">Office 365 통합 감사 로그</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" accept=".json" required>
+<button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.filename }} — {{ result.count }}개 이벤트</h6>
+<div style="max-height:600px; overflow-y:auto;">
+{% for ev in result.events %}<details class="mb-1"><summary class="text-dim small" style="cursor:pointer;">이벤트 {{ loop.index }}</summary>
+<pre style="background:var(--bg); padding:.4rem; font-size:.7rem; max-height:300px; overflow:auto;">{{ ev | tojson(indent=2) }}</pre></details>{% endfor %}
+</div></div>{% endif %}</div>{% endblock %}

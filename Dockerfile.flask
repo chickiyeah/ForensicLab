@@ -1,0 +1,83 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# ── 시스템 패키지 ──────────────────────────────────────────────
+# 런타임에서 단계적으로 설치되던 패키지를 모두 명시 (재빌드 재현성 확보)
+RUN apt-get update && apt-get install -y \
+    # 기본 유틸
+    lrzsz \
+    unzip \
+    vsftpd \
+    nano \
+    util-linux \
+    ca-certificates \
+    git \
+    # 빌드 체인 (libyal/plaso python 바인딩 컴파일에 필요)
+    build-essential \
+    python3-dev \
+    pkg-config \
+    autoconf \
+    automake \
+    libtool \
+    m4 \
+    gettext \
+    libssl-dev \
+    libffi-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    # 포렌식 도구
+    hashcat \
+    john \
+    sleuthkit \
+    ewf-tools \
+    # 암호화 해제 (BitLocker / LUKS / VeraCrypt)
+    cryptsetup-bin \
+    dislocker \
+    fuse3 \
+    # OCR
+    tesseract-ocr \
+    tesseract-ocr-kor \
+    tesseract-ocr-jpn \
+    tesseract-ocr-chi-sim \
+    libzbar0 \
+    # libyal / TSK / EWF 개발 헤더 (python 바인딩 빌드용)
+    libtsk-dev \
+    libewf-dev \
+    libewf2 \
+    libbde-dev \
+    libevtx-dev \
+    libfsapfs-dev \
+    libfsext-dev \
+    libfsfat-dev \
+    libfshfs-dev \
+    libfsntfs-dev \
+    libfsxfs-dev \
+    libfvde-dev \
+    libluksde-dev \
+    libmodi-dev \
+    libphdi-dev \
+    libqcow-dev \
+    libsigscan-dev \
+    libsmdev-dev \
+    libsmraw-dev \
+    libvhdi-dev \
+    libvmdk-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 파이썬 패키지 (전체 핀 고정) ───────────────────────────────
+# freeze 가 모든 전이 의존성을 포함하므로 --no-deps 로 동결 환경을 그대로 재현.
+# (blackboxprotobuf↔protobuf, pytesseract↔packaging 등 기존 누적 핀 불일치를
+#  리졸버가 거부하지 않도록. 런타임에는 무해하며 라이브 환경과 동일 상태)
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+ && pip install --no-cache-dir --no-deps -r requirements.txt
+
+# ── plaso CLI 심볼릭 링크 ─────────────────────────────────────
+# 신규 plaso CLI 는 .py 확장자가 없어 코드가 log2timeline.py/psort.py 를 찾을 때 대비
+RUN ln -sf /usr/local/bin/log2timeline /usr/local/bin/log2timeline.py \
+ && ln -sf /usr/local/bin/psort        /usr/local/bin/psort.py
+
+EXPOSE 5000
+
+CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "hospital:create_app()"]

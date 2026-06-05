@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">WHOIS / IP 정보</span></div>
+<h1 class="page-title"><i class="bi bi-globe-asia-australia me-2 text-accent"></i>WHOIS / IP 정보</h1>
+<p class="page-sub">도메인 또는 IP의 WHOIS 정보·등록자·국가·ASN·RFC1918 분류를 표시합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-4"><div class="tool-panel">
+<form method="POST">
+<label class="form-label-sm">도메인 또는 IP</label>
+<input type="text" name="target" class="form-control mb-3" placeholder="example.com 또는 8.8.8.8" {% if result %}value="{{ result.target }}"{% endif %}>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>조회</button>
+</form></div></div>
+<div class="col-lg-8">{% if result %}
+<div class="tool-panel mb-2"><table class="table table-sm" style="font-size:.85rem;">
+<tr><td class="text-dim" style="width:140px;">대상</td><td><code>{{ result.target }}</code></td></tr>
+<tr><td class="text-dim">분류</td><td><strong>{{ result.classification }}</strong></td></tr>
+<tr><td class="text-dim">WHOIS 서버</td><td><code>{{ result.whois_server }}</code></td></tr>
+{% for k, v in result.extracted.items() %}<tr><td class="text-dim">{{ k }}</td><td><code>{{ v }}</code></td></tr>{% endfor %}
+</table></div>
+<div class="tool-panel"><h6 class="panel-title">전체 WHOIS 응답</h6>
+<pre style="background:var(--bg); padding:.75rem; border-radius:.4rem; font-size:.72rem; max-height:500px; overflow:auto; margin:0;">{{ result.raw }}</pre>
+</div>{% endif %}
+</div></div></div>{% endblock %}
