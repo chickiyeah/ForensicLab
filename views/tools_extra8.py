@@ -1,11 +1,11 @@
-"""포렌식 가이드 시스템
+﻿"""포렌식 가이드 시스템
 
 1. /tools/forensic-paths — 레지스트리 핵심 경로 카탈로그
 2. /tools/beginner       — 초보자 가이드 (시나리오 기반)
 3. /tools/glossary       — 용어집
 """
 from flask import request, render_template
-from hospital.views.tools import bp
+from monitor.views.tools import bp
 
 
 # ════════════════════════════════════════════════════════════════
@@ -1033,7 +1033,7 @@ _TOOL_HIVE_MAP = {
 
 
 from flask import session
-from hospital.views.tools import bp as _bp
+from monitor.views.tools import bp as _bp
 
 
 @_bp.context_processor

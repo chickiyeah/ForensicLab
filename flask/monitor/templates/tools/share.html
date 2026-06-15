@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/tools/history" class="text-dim text-decoration-none small"><i class="bi bi-archive me-1"></i>분석 이력</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">공유된 분석 결과</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-share me-2 text-accent"></i>{{ log.tool_label or log.tool }}</h1>
+    <p class="page-sub">{{ log.created.strftime('%Y-%m-%d %H:%M') if log.created else '' }}</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-info-circle me-2"></i>분석 정보</h6>
+        <div class="result-meta">
+          <div class="mb-2"><span class="text-dim">도구</span><br><strong>{{ log.tool_label or log.tool }}</strong></div>
+          {% if log.filename %}
+          <div class="mb-2"><span class="text-dim">파일</span><br><strong>{{ log.filename }}</strong></div>
+          {% endif %}
+          {% if log.file_size %}
+          <div class="mb-2"><span class="text-dim">크기</span><br><strong>{{ "{:,}".format(log.file_size) }} bytes</strong></div>
+          {% endif %}
+          {% if log.created %}
+          <div class="mb-2"><span class="text-dim">분석 시각</span><br><strong>{{ log.created.strftime('%Y-%m-%d %H:%M:%S') }}</strong></div>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-accent btn-sm" onclick="copyShareLink()">
+            <i class="bi bi-link-45deg me-1"></i>링크 복사
+          </button>
+          <a href="/tools/report/{{ log.share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-printer me-1"></i>PDF 저장
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-check2-circle me-2 text-accent"></i>분석 요약</h6>
+        <p style="color:var(--text);">{{ log.summary or '요약 없음' }}</p>
+      </div>
+
+      {% if result %}
+      <div class="tool-panel mt-4">
+        <h6 class="panel-title"><i class="bi bi-table me-2"></i>상세 결과</h6>
+        {% for key, val in result.items() %}
+          {% if val and key not in ('filename', 'strings', 'events', 'found') %}
+          <div class="mb-2 d-flex" style="font-size:.88rem; border-bottom:1px solid #0d1a2d; padding-bottom:6px;">
+            <span class="text-dim me-3" style="min-width:140px;">{{ key }}</span>
+            <span style="word-break:break-all;">
+              {% if val is mapping %}
+                {% for k2, v2 in val.items() %}
+                  <span class="badge me-1" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text);">{{ k2 }}: {{ v2 }}</span>
+                {% endfor %}
+              {% elif val is iterable and val is not string %}
+                {% for item in val[:5] %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}
+              {% else %}
+                {{ val }}
+              {% endif %}
+            </span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function copyShareLink() {
+  navigator.clipboard.writeText(window.location.href).then(function() {
+    var btn = document.querySelector('[onclick="copyShareLink()"]');
+    btn.innerHTML = '<i class="bi bi-check me-1"></i>복사됨';
+    setTimeout(function() { btn.innerHTML = '<i class="bi bi-link-45deg me-1"></i>링크 복사'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

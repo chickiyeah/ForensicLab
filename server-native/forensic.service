@@ -1,0 +1,22 @@
+[Unit]
+Description=ForensicLab (gunicorn / monitor app, no docker)
+After=network.target
+
+[Service]
+# ↓↓↓ 설치 환경에 맞게 수정 ↓↓↓
+User=ruddls030
+Group=ruddls030
+WorkingDirectory=/home/ruddls030/forensic/flask
+# 상대경로 config(production.py)가 자동 로드되므로 보통 불필요. 강제 지정 시 주석 해제:
+# Environment=APP_CONFIG_FILE=/home/ruddls030/forensic/flask/config/production.py
+# Discord 웹훅 등 (선택)
+# Environment=HONEYTRAP_WEBHOOK=
+
+ExecStart=/home/ruddls030/forensic/flask/venv/bin/gunicorn \
+          --config /home/ruddls030/forensic/flask/gunicorn.conf.py \
+          "monitor:create_app()"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

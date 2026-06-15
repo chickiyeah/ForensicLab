@@ -1,4 +1,4 @@
-"""ForensicLab 10차 — AI 침입자 허니트랩 & 포렌식 프로파일러
+﻿"""ForensicLab 10차 — AI 침입자 허니트랩 & 포렌식 프로파일러
 
 /tools/honeytrap — 사이트를 노리는 자동화 공격자, 특히 LLM 에이전트를 탐지·박제.
 
@@ -28,10 +28,10 @@ from urllib.parse import unquote, unquote_plus
 
 from flask import request, render_template, jsonify, Response, abort
 
-from hospital.views.tools import bp
+from monitor.views.tools import bp
 
 try:
-    from hospital.views.tools_extra5 import _coc_record
+    from monitor.views.tools_extra5 import _coc_record
 except Exception:  # pragma: no cover
     def _coc_record(*a, **k):
         return None
@@ -693,7 +693,7 @@ def honeytrap_clear():
 # 도움말 등록
 # ════════════════════════════════════════════════════════════════════
 try:
-    from hospital.views.tools_extra7 import _TOOL_HELP
+    from monitor.views.tools_extra7 import _TOOL_HELP
     _TOOL_HELP['honeytrap'] = {
         'what': 'AI 침입자 허니트랩 — LLM 에이전트를 표적으로 잡는 능동 방어/포렌식 시스템.',
         'how': '자동 동작(설정 불필요). 디코이 엔드포인트(.env·admin·.git·llms.txt·api/keys)에 '

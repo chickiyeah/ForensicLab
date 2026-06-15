@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">macOS Unified Log</span></div>
+<h1 class="page-title"><i class="bi bi-journal-code me-2 text-accent"></i>macOS Unified Log</h1>
+<p class="page-sub">.tracev3 청크 구조</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" accept=".tracev3" required><button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }} — {{ result.total }}개 청크</h6>
+<div style="max-height:500px; overflow-y:auto;"><table class="table table-sm" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>오프셋</th><th>태그</th><th>이름</th><th>크기</th></tr></thead><tbody>
+{% for c in result.chunks %}<tr><td>{{ c.offset }}</td><td><code>{{ c.tag }}</code></td>
+<td><strong>{{ c.name }}</strong></td><td>{{ c.size }}</td></tr>{% endfor %}
+</tbody></table></div></div>{% endif %}</div>{% endblock %}

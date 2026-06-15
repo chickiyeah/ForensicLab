@@ -1,0 +1,594 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">해시 검증</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-fingerprint me-2 text-accent"></i>해시 검증</h1>
+    <p class="page-sub">6가지 모드로 파일·텍스트 무결성을 검증하고 비교합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  {# ── 모드 탭 ── #}
+  <ul class="nav hash-mode-tabs mb-4" id="hashModeTabs">
+    {% set modes = [
+      ('single',       'bi-hash',          '단일 계산'),
+      ('file_vs_file', 'bi-file-diff',     '파일 vs 파일'),
+      ('text_vs_text', 'bi-type',          '텍스트 vs 텍스트'),
+      ('text_vs_file', 'bi-arrow-left-right', '텍스트 vs 파일'),
+      ('hmac',         'bi-key',           'HMAC'),
+      ('batch',        'bi-collection',    '배치 해시'),
+    ] %}
+    {% for mid, icon, label in modes %}
+    <li class="nav-item">
+      <button class="hash-tab-btn {% if active_mode == mid %}active{% endif %}"
+              data-mode="{{ mid }}" type="button">
+        <i class="bi {{ icon }} me-1"></i>{{ label }}
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {# ── 알고리즘 공통 선택 ── #}
+  <div class="tool-panel mb-4" id="algoPanel">
+    <h6 class="panel-title mb-3"><i class="bi bi-gear me-2"></i>알고리즘 선택</h6>
+    <div class="d-flex flex-wrap gap-2" id="algoCheckboxes">
+      {% for algo in ['md5','sha1','sha256','sha512','sha3_256','blake2b'] %}
+      <label class="check-pill">
+        <input type="checkbox" name="algo_opt" value="{{ algo }}"
+               {% if algo in ['md5','sha1','sha256','sha512'] %}checked{% endif %}>
+        {{ algo.upper().replace('_','-') }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {# ══════════════════════════════════════════════════
+       입력 패널
+    ══════════════════════════════════════════════════ #}
+    <div class="col-lg-5">
+
+      {# ─── 1. 단일 계산 ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-single"
+            class="mode-form {% if active_mode != 'single' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="single">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-upload me-2"></i>단일 계산</h6>
+          <div class="mb-3">
+            <label class="form-label-sm">파일 업로드</label>
+            <input type="file" name="file" multiple class="form-control">
+          </div>
+          <div class="divider-text">또는</div>
+          <div class="mb-3">
+            <label class="form-label-sm">텍스트 직접 입력</label>
+            <textarea name="text" class="form-control" rows="3"
+                      placeholder="해시를 계산할 텍스트를 입력하세요..."></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm">알려진 해시와 비교 <span class="text-dim">(선택)</span></label>
+            <input type="text" name="compare" class="form-control font-mono"
+                   placeholder="비교할 해시값 입력...">
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-play-fill me-1"></i>해시 계산
+          </button>
+        </div>
+      </form>
+
+      {# ─── 2. 파일 vs 파일 ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-file_vs_file"
+            class="mode-form {% if active_mode != 'file_vs_file' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="file_vs_file">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-file-diff me-2"></i>파일 vs 파일</h6>
+          <p class="text-dim small mb-3">두 파일의 해시를 계산하여 동일한지 비교합니다.</p>
+          <div class="mb-3">
+            <label class="form-label-sm"><i class="bi bi-file-earmark me-1 text-accent"></i>파일 A</label>
+            <input type="file" name="file1" class="form-control" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm"><i class="bi bi-file-earmark me-1" style="color:#a78bfa"></i>파일 B</label>
+            <input type="file" name="file2" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-arrow-left-right me-1"></i>파일 비교
+          </button>
+        </div>
+      </form>
+
+      {# ─── 3. 텍스트 vs 텍스트 ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-text_vs_text"
+            class="mode-form {% if active_mode != 'text_vs_text' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="text_vs_text">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-type me-2"></i>텍스트 vs 텍스트</h6>
+          <p class="text-dim small mb-3">두 텍스트의 해시를 계산하여 내용이 같은지 비교합니다.</p>
+          <div class="mb-3">
+            <label class="form-label-sm"><i class="bi bi-fonts me-1 text-accent"></i>텍스트 A</label>
+            <textarea name="text1" class="form-control" rows="4"
+                      placeholder="첫 번째 텍스트..." required></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm"><i class="bi bi-fonts me-1" style="color:#a78bfa"></i>텍스트 B</label>
+            <textarea name="text2" class="form-control" rows="4"
+                      placeholder="두 번째 텍스트..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-arrow-left-right me-1"></i>텍스트 비교
+          </button>
+        </div>
+      </form>
+
+      {# ─── 4. 텍스트 vs 파일 ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-text_vs_file"
+            class="mode-form {% if active_mode != 'text_vs_file' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="text_vs_file">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2"></i>텍스트 vs 파일</h6>
+          <p class="text-dim small mb-3">텍스트를 파일과 바이트 수준으로 비교합니다.</p>
+          <div class="mb-3">
+            <label class="form-label-sm"><i class="bi bi-fonts me-1 text-accent"></i>텍스트</label>
+            <textarea name="text" class="form-control" rows="4"
+                      placeholder="비교할 텍스트..." required></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm"><i class="bi bi-file-earmark me-1" style="color:#a78bfa"></i>파일</label>
+            <input type="file" name="file" multiple class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-arrow-left-right me-1"></i>비교
+          </button>
+        </div>
+      </form>
+
+      {# ─── 5. HMAC ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-hmac"
+            class="mode-form {% if active_mode != 'hmac' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="hmac">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-key me-2"></i>HMAC 계산</h6>
+          <p class="text-dim small mb-3">비밀 키로 서명된 메시지 인증 코드를 생성합니다.</p>
+
+          <div class="mb-3">
+            <label class="form-label-sm">HMAC 알고리즘</label>
+            <select name="hmac_algo" class="form-control">
+              {% for a in ['sha256','sha512','sha1','sha3_256','md5','blake2b'] %}
+              <option value="{{ a }}">HMAC-{{ a.upper().replace('_','-') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-sm">비밀 키</label>
+            <input type="text" name="hmac_key" class="form-control font-mono"
+                   placeholder="Secret key..." required>
+            <div class="d-flex gap-3 mt-2">
+              <label class="check-pill">
+                <input type="radio" name="key_encoding" value="utf8" checked> UTF-8
+              </label>
+              <label class="check-pill">
+                <input type="radio" name="key_encoding" value="hex"> Hex
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-sm">데이터 (파일)</label>
+            <input type="file" name="file" multiple class="form-control">
+          </div>
+          <div class="divider-text">또는</div>
+          <div class="mb-3">
+            <label class="form-label-sm">데이터 (텍스트)</label>
+            <textarea name="text" class="form-control" rows="3"
+                      placeholder="메시지 텍스트..."></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm">알려진 HMAC과 비교 <span class="text-dim">(선택)</span></label>
+            <input type="text" name="compare" class="form-control font-mono"
+                   placeholder="검증할 HMAC값...">
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-shield-check me-1"></i>HMAC 생성
+          </button>
+        </div>
+      </form>
+
+      {# ─── 6. 배치 해시 ─── #}
+      <form method="POST" enctype="multipart/form-data" id="form-batch"
+            class="mode-form {% if active_mode != 'batch' %}d-none{% endif %}">
+        <input type="hidden" name="mode" value="batch">
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-collection me-2"></i>배치 해시</h6>
+          <p class="text-dim small mb-3">여러 파일을 한 번에 해시하고 중복 파일을 탐지합니다.</p>
+          <div class="mb-4">
+            <label class="form-label-sm">파일 선택 (다중 선택 가능)</label>
+            <input type="file" name="files" class="form-control" multiple required>
+            <div class="text-dim small mt-1">Ctrl/Cmd + 클릭으로 여러 파일 선택</div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-play-fill me-1"></i>배치 해시 계산
+          </button>
+        </div>
+      </form>
+
+    </div>{# /col-lg-5 #}
+
+    {# ══════════════════════════════════════════════════
+       결과 패널
+    ══════════════════════════════════════════════════ #}
+    <div class="col-lg-7">
+
+      {% if error %}
+      <div class="alert-error"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if results %}
+
+        {# ─── 단일 계산 결과 ─── #}
+        {% if results.mode == 'single' %}
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-check2-circle me-2 text-accent"></i>결과</h6>
+          <div class="result-meta mb-3">
+            <span><i class="bi bi-file-earmark me-1"></i>{{ results.name }}</span>
+            <span class="ms-3"><i class="bi bi-database me-1"></i>{{ "{:,}".format(results.size) }} bytes</span>
+          </div>
+          {% if results.compare and results.match is not none %}
+          <div class="match-banner {{ 'match-ok' if results.match else 'match-fail' }} mb-3">
+            {% if results.match %}<i class="bi bi-shield-check me-2"></i>무결성 확인 — 해시 일치
+            {% else %}<i class="bi bi-shield-x me-2"></i>무결성 오류 — 해시 불일치{% endif %}
+          </div>
+          {% endif %}
+          <div class="hash-table">
+            {% for algo, value in results.hashes.items() %}
+            <div class="hash-row">
+              <div class="hash-algo">{{ algo }}</div>
+              <div class="hash-value" onclick="copyHash(this)">{{ value }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+            </div>
+            {% endfor %}
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+        {# ─── 파일 vs 파일 결과 ─── #}
+        {% elif results.mode == 'file_vs_file' %}
+        <div class="tool-panel">
+          <h6 class="panel-title">
+            <i class="bi bi-file-diff me-2 text-accent"></i>파일 비교 결과
+          </h6>
+          <div class="match-banner {{ 'match-ok' if results.match else 'match-fail' }} mb-4">
+            {% if results.match %}
+            <i class="bi bi-shield-check me-2"></i>두 파일이 <strong>동일</strong>합니다 — 모든 알고리즘 해시 일치
+            {% else %}
+            <i class="bi bi-shield-x me-2"></i>두 파일이 <strong>다릅니다</strong> — 해시 불일치
+            {% endif %}
+          </div>
+          <div class="compare-grid">
+            {% for label, fname, fsize, hashes, color in [
+               ('파일 A', results.name1, results.size1, results.hashes1, 'text-accent'),
+               ('파일 B', results.name2, results.size2, results.hashes2, '#a78bfa'),
+            ] %}
+            <div>
+              <div class="result-meta mb-2">
+                <span class="{{ color }} fw-bold">{{ label }}</span>
+                <span class="ms-2">{{ fname }}</span>
+                <span class="ms-2 text-dim small">{{ "{:,}".format(fsize) }}B</span>
+              </div>
+              <div class="hash-table">
+                {% for algo, val in hashes.items() %}
+                <div class="hash-row {% if results.hashes1[algo] != results.hashes2[algo] %}hash-diff{% endif %}">
+                  <div class="hash-algo">{{ algo }}</div>
+                  <div class="hash-value" onclick="copyHash(this)">{{ val }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+        {# ─── 텍스트 vs 텍스트 결과 ─── #}
+        {% elif results.mode == 'text_vs_text' %}
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-type me-2 text-accent"></i>텍스트 비교 결과</h6>
+          <div class="match-banner {{ 'match-ok' if results.match else 'match-fail' }} mb-4">
+            {% if results.match %}
+            <i class="bi bi-shield-check me-2"></i>두 텍스트가 <strong>동일</strong>합니다
+            {% else %}
+            <i class="bi bi-shield-x me-2"></i>두 텍스트가 <strong>다릅니다</strong>
+            {% endif %}
+          </div>
+          <div class="compare-grid">
+            {% for label, txt, size, hashes, color in [
+               ('텍스트 A', results.text1, results.size1, results.hashes1, 'text-accent'),
+               ('텍스트 B', results.text2, results.size2, results.hashes2, '#a78bfa'),
+            ] %}
+            <div>
+              <div class="result-meta mb-2">
+                <span class="{{ color }} fw-bold">{{ label }}</span>
+                <span class="ms-2 text-dim small">{{ "{:,}".format(size) }}B</span>
+              </div>
+              <div class="text-preview mb-2">{{ txt }}</div>
+              <div class="hash-table">
+                {% for algo, val in hashes.items() %}
+                <div class="hash-row {% if results.hashes1[algo] != results.hashes2[algo] %}hash-diff{% endif %}">
+                  <div class="hash-algo">{{ algo }}</div>
+                  <div class="hash-value" onclick="copyHash(this)">{{ val }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+        {# ─── 텍스트 vs 파일 결과 ─── #}
+        {% elif results.mode == 'text_vs_file' %}
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-arrow-left-right me-2 text-accent"></i>텍스트 vs 파일 결과</h6>
+          <div class="match-banner {{ 'match-ok' if results.match else 'match-fail' }} mb-4">
+            {% if results.match %}
+            <i class="bi bi-shield-check me-2"></i>텍스트와 파일의 내용이 <strong>동일</strong>합니다
+            {% else %}
+            <i class="bi bi-shield-x me-2"></i>텍스트와 파일의 내용이 <strong>다릅니다</strong>
+            {% endif %}
+          </div>
+          <div class="compare-grid">
+            <div>
+              <div class="result-meta mb-2">
+                <span class="text-accent fw-bold">텍스트</span>
+                <span class="ms-2 text-dim small">{{ "{:,}".format(results.size_t) }}B</span>
+              </div>
+              <div class="text-preview mb-2">{{ results.text }}</div>
+              <div class="hash-table">
+                {% for algo, val in results.hashes_t.items() %}
+                <div class="hash-row {% if results.hashes_t[algo] != results.hashes_f[algo] %}hash-diff{% endif %}">
+                  <div class="hash-algo">{{ algo }}</div>
+                  <div class="hash-value" onclick="copyHash(this)">{{ val }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <div class="result-meta mb-2">
+                <span style="color:#a78bfa" class="fw-bold">파일</span>
+                <span class="ms-2">{{ results.filename }}</span>
+                <span class="ms-2 text-dim small">{{ "{:,}".format(results.size_f) }}B</span>
+              </div>
+              <div class="hash-table">
+                {% for algo, val in results.hashes_f.items() %}
+                <div class="hash-row {% if results.hashes_t[algo] != results.hashes_f[algo] %}hash-diff{% endif %}">
+                  <div class="hash-algo">{{ algo }}</div>
+                  <div class="hash-value" onclick="copyHash(this)">{{ val }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+        {# ─── HMAC 결과 ─── #}
+        {% elif results.mode == 'hmac' %}
+        <div class="tool-panel">
+          <h6 class="panel-title"><i class="bi bi-key me-2 text-accent"></i>HMAC 결과</h6>
+          <div class="result-meta mb-3">
+            <span><i class="bi bi-file-earmark me-1"></i>{{ results.name }}</span>
+            <span class="ms-3 text-dim">{{ "{:,}".format(results.size) }} bytes</span>
+            <span class="ms-3"><span class="badge-pill">HMAC-{{ results.algo }}</span></span>
+          </div>
+          {% if results.compare and results.match is not none %}
+          <div class="match-banner {{ 'match-ok' if results.match else 'match-fail' }} mb-3">
+            {% if results.match %}<i class="bi bi-shield-check me-2"></i>HMAC 검증 성공
+            {% else %}<i class="bi bi-shield-x me-2"></i>HMAC 검증 실패{% endif %}
+          </div>
+          {% endif %}
+          <div class="hash-table">
+            <div class="hash-row">
+              <div class="hash-algo">HMAC-{{ results.algo }}</div>
+              <div class="hash-value" onclick="copyHash(this)">{{ results.hmac }}<i class="bi bi-clipboard ms-2 copy-icon"></i></div>
+            </div>
+          </div>
+          <div class="info-box mt-3">
+            <i class="bi bi-info-circle me-1"></i>
+            HMAC은 비밀 키를 포함하므로 공유 링크 저장 시 키값은 포함되지 않습니다.
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+        {# ─── 배치 해시 결과 ─── #}
+        {% elif results.mode == 'batch' %}
+        <div class="tool-panel">
+          <h6 class="panel-title">
+            <i class="bi bi-collection me-2 text-accent"></i>배치 해시 결과
+            <span class="badge-pill ms-2">{{ results.files | length }}개 파일</span>
+          </h6>
+
+          {% if results.duplicates %}
+          <div class="alert-error mb-3">
+            <i class="bi bi-copy me-2"></i>
+            <strong>중복 파일 탐지</strong> — {{ results.duplicates | length }}개 그룹
+            {% for h, names in results.duplicates.items() %}
+            <div class="mt-1 text-dim small">{{ h[:16] }}… → {{ names | join(', ') }}</div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="match-banner match-ok mb-3">
+            <i class="bi bi-check2-all me-2"></i>중복 파일 없음
+          </div>
+          {% endif %}
+
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0" style="font-size:.82rem">
+              <thead>
+                <tr>
+                  <th>파일명</th>
+                  <th>크기</th>
+                  {% for algo in results.algos %}<th>{{ algo }}</th>{% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for f in results.files %}
+                {% set is_dup = f.hashes[results.algos[0]] in results.duplicates %}
+                <tr {% if is_dup %}class="table-warning text-dark"{% endif %}>
+                  <td>
+                    {{ f.name }}
+                    {% if is_dup %}<span class="badge bg-warning text-dark ms-1">중복</span>{% endif %}
+                  </td>
+                  <td class="text-dim">{{ "{:,}".format(f.size) }}B</td>
+                  {% for algo in results.algos %}
+                  <td>
+                    <span class="font-mono" style="font-size:.75rem"
+                          onclick="copyText('{{ f.hashes[algo] }}')"
+                          title="{{ f.hashes[algo] }}" style="cursor:pointer">
+                      {{ f.hashes[algo][:12] }}…
+                    </span>
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-3 text-dim small">
+            <i class="bi bi-info-circle me-1"></i>
+            해시값 클릭 시 전체 복사됩니다.
+          </div>
+          {% include 'tools/_hash_share_bar.html' %}
+        </div>
+
+      {% endif %}{# /mode check #}
+      {% endif %}{# /if results #}
+
+      {% if not results and not error %}
+      <div class="empty-state">
+        <i class="bi bi-fingerprint"></i>
+        <p>모드를 선택하고 입력 후<br>계산 버튼을 누르세요.</p>
+      </div>
+      {% endif %}
+
+    </div>{# /col-lg-7 #}
+  </div>{# /row #}
+</div>
+
+{# ── 공유 바 인클루드 파일 (인라인) ── #}
+{% macro share_bar() %}
+{% if share_token %}
+<div class="mt-3 pt-3 d-flex gap-2 flex-wrap" style="border-top:1px solid var(--border);">
+  <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')">
+    <i class="bi bi-share me-1"></i>공유 링크
+  </button>
+  <a href="/tools/report/{{ share_token }}" target="_blank"
+     class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-printer me-1"></i>리포트
+  </a>
+  <a href="/tools/history" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-archive me-1"></i>이력
+  </a>
+</div>
+{% endif %}
+{% endmacro %}
+
+<style>
+.hash-mode-tabs { gap:.5rem; flex-wrap:wrap; border:none; }
+.hash-tab-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: .45rem 1rem;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.hash-tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+.hash-tab-btn.active {
+  background: rgba(0,212,255,.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+@media(max-width:600px){ .compare-grid{ grid-template-columns:1fr; } }
+.text-preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .5rem .75rem;
+  font-size: .8rem;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 80px;
+  overflow: auto;
+}
+.hash-diff .hash-value { background: rgba(239,68,68,.08) !important; border-color: rgba(239,68,68,.3) !important; }
+.hash-diff .hash-algo  { color: #ef4444 !important; }
+.font-mono { font-family: monospace; font-size:.88rem; }
+</style>
+
+<script>
+// ── 탭 전환 ──
+document.querySelectorAll('.hash-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.hash-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-form').forEach(f => f.classList.add('d-none'));
+    btn.classList.add('active');
+    document.getElementById('form-' + btn.dataset.mode).classList.remove('d-none');
+  });
+});
+
+// ── 알고리즘 선택 → 각 폼의 hidden algos 동기화 ──
+function syncAlgos() {
+  const checked = [...document.querySelectorAll('#algoCheckboxes input:checked')]
+                    .map(c => c.value);
+  document.querySelectorAll('.mode-form').forEach(form => {
+    form.querySelectorAll('input[name="algos"]').forEach(e => e.remove());
+    checked.forEach(v => {
+      const h = document.createElement('input');
+      h.type = 'hidden'; h.name = 'algos'; h.value = v;
+      form.appendChild(h);
+    });
+  });
+}
+document.querySelectorAll('#algoCheckboxes input').forEach(cb => {
+  cb.addEventListener('change', syncAlgos);
+});
+syncAlgos();
+
+// ── 클립보드 복사 ──
+function copyHash(el) {
+  const text = el.textContent.trim().split('\n')[0].trim();
+  navigator.clipboard.writeText(text).then(() => {
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1500);
+  });
+}
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => {
+    const tip = document.createElement('div');
+    tip.textContent = '복사됨';
+    tip.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--accent);color:#000;padding:6px 14px;border-radius:6px;font-size:.85rem;z-index:9999';
+    document.body.appendChild(tip);
+    setTimeout(() => tip.remove(), 1500);
+  });
+}
+function copyShareLink(t) {
+  navigator.clipboard.writeText(location.origin + '/tools/share/' + t).then(() => {
+    event.currentTarget.innerHTML = '<i class="bi bi-check me-1"></i>복사됨';
+    setTimeout(() => event.currentTarget.innerHTML = '<i class="bi bi-share me-1"></i>공유 링크', 2000);
+  });
+}
+</script>
+{% endblock %}

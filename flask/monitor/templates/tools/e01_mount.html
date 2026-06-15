@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">E01 / EnCase 이미지</span></div>
+<h1 class="page-title"><i class="bi bi-hdd-rack-fill me-2 text-accent"></i>E01 / EnCase 이미지</h1>
+<p class="page-sub">libewf로 E01·Ex01 이미지 메타데이터·해시·세그먼트 분석</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" accept=".E01,.Ex01,.S01" required>
+<button class="btn btn-accent w-100">분석</button>
+</form></div></div></div>
+{% else %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.filename }}</h6>
+<table class="table table-sm" style="font-size:.85rem;">
+<tr><td class="text-dim">파일 크기</td><td>{{ "{:,}".format(result.size) }} B</td></tr>
+<tr><td class="text-dim">미디어 크기</td><td>{{ "{:,}".format(result.media_size) }} B</td></tr>
+<tr><td class="text-dim">섹터 크기</td><td>{{ result.sector_size }} B</td></tr>
+<tr><td class="text-dim">섹터 수</td><td>{{ "{:,}".format(result.num_sectors) }}</td></tr>
+<tr><td class="text-dim">청크</td><td>{{ result.segments }}</td></tr>
+<tr><td class="text-dim">압축</td><td>{{ result.compression_method }}</td></tr>
+<tr><td class="text-dim">MD5</td><td><code>{{ result.md5 }}</code></td></tr>
+<tr><td class="text-dim">SHA-1</td><td><code>{{ result.sha1 }}</code></td></tr>
+</table>
+{% if result.header_values %}<h6 class="panel-title mt-3">헤더 값</h6>
+<table class="table table-sm" style="font-size:.82rem;"><tbody>
+{% for k, v in result.header_values.items() %}<tr><td class="text-dim">{{ k }}</td><td><code style="word-break:break-all;">{{ v }}</code></td></tr>{% endfor %}
+</tbody></table>{% endif %}
+</div>{% endif %}</div>{% endblock %}

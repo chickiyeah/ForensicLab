@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">마이페이지</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-person-circle me-2"></i>마이페이지</h1>
+    <p class="page-sub">계정 정보 및 분석 이력을 관리합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+
+    <!-- 계정 정보 -->
+    <div class="col-lg-5">
+      <div class="tool-panel h-100">
+        <h5 class="mb-4" style="color:var(--accent);"><i class="bi bi-person me-2"></i>계정 정보</h5>
+        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+          <div class="text-dim small mb-1">아이디</div>
+          <div class="fw-bold" style="font-size:1.1rem;">{{ user.username }}</div>
+        </div>
+        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+          <div class="text-dim small mb-1">이메일</div>
+          <div>{{ user.email }}</div>
+        </div>
+        <div class="mb-4 pb-3" style="border-bottom:1px solid var(--border);">
+          <div class="text-dim small mb-1">가입일</div>
+          <div>{{ user.created.strftime('%Y년 %m월 %d일') }}</div>
+        </div>
+        <div class="row g-2 text-center">
+          <div class="col-6">
+            <div class="tool-panel p-3" style="background:var(--bg);">
+              <div style="font-size:1.6rem; font-weight:700; color:var(--accent);">{{ total_logs }}</div>
+              <div class="text-dim small">총 분석 횟수</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="tool-panel p-3" style="background:var(--bg);">
+              <div style="font-size:1.6rem; font-weight:700; color:#a78bfa;">{{ tool_count }}</div>
+              <div class="text-dim small">사용한 도구 수</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 비밀번호 변경 -->
+    <div class="col-lg-7">
+      <div class="tool-panel">
+        <h5 class="mb-4" style="color:var(--accent);"><i class="bi bi-key me-2"></i>비밀번호 변경</h5>
+        {% if pw_success %}
+        <div class="alert-success mb-3" style="background:#0f2a1a; border:1px solid #22c55e33; color:#4ade80; padding:.75rem 1rem; border-radius:.5rem;">
+          <i class="bi bi-check-circle me-2"></i>비밀번호가 변경되었습니다.
+        </div>
+        {% endif %}
+        {% if pw_error %}
+        <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ pw_error }}</div>
+        {% endif %}
+        <form method="POST">
+          <input type="hidden" name="action" value="change_password">
+          <div class="mb-3">
+            <label class="form-label-sm">현재 비밀번호</label>
+            <input type="password" name="current_password" class="form-control" placeholder="현재 비밀번호 입력" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-sm">새 비밀번호</label>
+            <input type="password" name="new_password" class="form-control" placeholder="새 비밀번호 (6자 이상)" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-sm">새 비밀번호 확인</label>
+            <input type="password" name="confirm_password" class="form-control" placeholder="새 비밀번호 재입력" required>
+          </div>
+          <button type="submit" class="btn btn-accent">
+            <i class="bi bi-shield-check me-1"></i>비밀번호 변경
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 최근 분석 이력 -->
+    <div class="col-12">
+      <div class="tool-panel">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h5 class="mb-0" style="color:var(--accent);"><i class="bi bi-clock-history me-2"></i>최근 분석 이력</h5>
+          <a href="/tools/history" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-archive me-1"></i>전체 이력
+          </a>
+        </div>
+
+        {% if tool_stats %}
+        <div class="row g-2 mb-4">
+          {% for stat in tool_stats %}
+          <div class="col-auto">
+            <span class="tag" style="padding:.4rem .8rem; font-size:.8rem;">
+              {{ stat.tool_label or stat.tool }} <span style="color:var(--accent); margin-left:.3rem;">{{ stat.cnt }}</span>
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if recent_logs %}
+        <div class="table-responsive">
+          <table class="table table-dark table-hover" style="font-size:.875rem;">
+            <thead>
+              <tr style="color:var(--text-dim); border-color:var(--border);">
+                <th>도구</th>
+                <th>파일명</th>
+                <th>요약</th>
+                <th>일시</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in recent_logs %}
+              <tr style="border-color:var(--border);">
+                <td>
+                  <span class="tag" style="font-size:.75rem;">{{ log.tool_label or log.tool }}</span>
+                </td>
+                <td class="text-dim">{{ log.filename or '-' }}</td>
+                <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  {{ log.summary or '-' }}
+                </td>
+                <td class="text-dim" style="white-space:nowrap;">
+                  {{ log.created.strftime('%m-%d %H:%M') }}
+                </td>
+                <td>
+                  {% if log.share_token %}
+                  <a href="/tools/report/{{ log.share_token }}" target="_blank"
+                     class="btn btn-sm btn-outline-secondary" style="padding:.2rem .5rem; font-size:.75rem;">
+                    <i class="bi bi-file-earmark-text"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-dim">
+          <i class="bi bi-inbox" style="font-size:2.5rem; display:block; margin-bottom:.75rem;"></i>
+          분석 이력이 없습니다. 도구를 사용해보세요!
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

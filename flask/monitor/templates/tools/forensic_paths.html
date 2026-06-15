@@ -1,0 +1,118 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<h1 class="page-title"><i class="bi bi-signpost-2-fill me-2 text-accent"></i>포렌식 핵심 경로 가이드</h1>
+<p class="page-sub">레지스트리·파일시스템에서 반드시 확인해야 할 위치들. 클릭하여 경로 복사 후 해당 도구로 분석.</p>
+</div></div>
+
+<div class="container pb-5">
+
+<div class="tool-panel mb-3" style="position:sticky; top:60px; z-index:10; background:var(--bg-card);">
+<div class="position-relative">
+<i class="bi bi-search position-absolute" style="left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-dim);"></i>
+<input type="text" id="pathSearch" class="form-control" placeholder="경로·키워드 검색 (예: USB, 자동실행, UserAssist)" style="padding-left:2.3rem;" autofocus>
+</div>
+<div class="d-flex flex-wrap gap-1 mt-2" id="catFilter">
+<button class="btn btn-sm btn-accent" data-cat="all" onclick="setCat('all')">전체</button>
+<button class="btn btn-sm btn-outline-secondary" data-cat="reg" onclick="setCat('reg')">🗄 레지스트리</button>
+<button class="btn btn-sm btn-outline-secondary" data-cat="fs" onclick="setCat('fs')">📁 파일시스템</button>
+</div>
+</div>
+
+<!-- 레지스트리 섹션 -->
+<div class="path-section" data-section="reg">
+<h4 class="mt-4 mb-3"><i class="bi bi-diagram-2 me-2 text-accent"></i>레지스트리 핵심 경로 ({{ reg_paths|length }})</h4>
+
+{% for hive, paths in by_hive.items() %}
+<div class="tool-panel mb-3 path-item" data-search="{{ hive|lower }} 레지스트리">
+<h6 class="panel-title">
+<i class="bi bi-folder-fill me-2" style="color:#f59e0b;"></i>{{ hive }} 하이브
+<span class="text-dim small ms-2">{{ paths|length }}개 경로</span>
+</h6>
+{% for p in paths %}
+{% set sev_color = {'high':'#ef4444','medium':'#f59e0b','low':'#3b82f6','info':'#9ca3af'}.get(p.severity, '#9ca3af') %}
+<div class="path-item mb-3 p-2" style="background:var(--bg); border-radius:.4rem; border-left:3px solid {{ sev_color }};"
+     data-search="{{ p.path|lower }} {{ p.desc|lower }} {{ p.category|lower }}">
+<div class="d-flex justify-content-between gap-2 mb-1">
+<div style="flex:1;">
+<code style="color:var(--accent); font-size:.84rem; word-break:break-all;">{{ p.path }}</code>
+<span class="tag ms-2" style="background:{{ sev_color }}22; color:{{ sev_color }}; font-size:.68rem;">{{ p.category }}</span>
+</div>
+<button class="btn btn-sm btn-outline-secondary" style="padding:.1rem .4rem; font-size:.72rem;"
+        onclick="copyPath(this, '{{ p.path }}')"><i class="bi bi-clipboard"></i></button>
+</div>
+<div class="text-dim small">{{ p.desc }}</div>
+{% if p.check %}<div class="mt-1 small">
+<strong style="color:var(--accent);">✓ 확인사항:</strong>
+<ul class="mb-0 mt-1" style="font-size:.78rem;">
+{% for c in p.check %}<li>{{ c }}</li>{% endfor %}
+</ul></div>{% endif %}
+<div class="mt-2"><a href="/tools/registry" class="btn btn-sm btn-accent" style="font-size:.72rem;">
+<i class="bi bi-arrow-right me-1"></i>레지스트리 도구로 분석</a></div>
+</div>
+{% endfor %}
+</div>
+{% endfor %}
+</div>
+
+<!-- 파일시스템 섹션 -->
+<div class="path-section" data-section="fs">
+<h4 class="mt-4 mb-3"><i class="bi bi-hdd me-2 text-accent"></i>파일시스템 핵심 경로 ({{ fs_paths|length }})</h4>
+
+{% for os, paths in by_os.items() %}
+<div class="tool-panel mb-3 path-item" data-search="{{ os|lower }} 파일시스템">
+<h6 class="panel-title">
+{% if os == 'Windows' %}<i class="bi bi-microsoft me-2" style="color:#00a4ef;"></i>
+{% elif os == 'Linux' %}<i class="bi bi-ubuntu me-2" style="color:#e95420;"></i>
+{% elif os == 'macOS' %}<i class="bi bi-apple me-2" style="color:#a3aaae;"></i>
+{% elif os == 'iOS' %}<i class="bi bi-phone-fill me-2" style="color:#a3aaae;"></i>
+{% elif os == 'Android' %}<i class="bi bi-android2 me-2" style="color:#3ddc84;"></i>
+{% endif %}{{ os }}
+<span class="text-dim small ms-2">{{ paths|length }}개 경로</span>
+</h6>
+{% for p in paths %}
+<div class="path-item mb-2 p-2" style="background:var(--bg); border-radius:.4rem;"
+     data-search="{{ p.path|lower }} {{ p.desc|lower }} {{ p.category|lower }}">
+<div class="d-flex justify-content-between gap-2">
+<div style="flex:1;">
+<code style="font-size:.78rem; word-break:break-all;">{{ p.path }}</code>
+<span class="tag ms-2" style="font-size:.68rem;">{{ p.category }}</span>
+</div>
+<button class="btn btn-sm btn-outline-secondary" style="padding:.1rem .4rem; font-size:.72rem;"
+        onclick="copyPath(this, '{{ p.path|replace("\\\\","\\\\\\\\")|safe }}')"><i class="bi bi-clipboard"></i></button>
+</div>
+<div class="text-dim small mt-1">{{ p.desc }}</div>
+</div>
+{% endfor %}
+</div>
+{% endfor %}
+</div>
+
+</div>
+
+<script>
+function copyPath(btn, path) {
+  navigator.clipboard.writeText(path);
+  btn.innerHTML = '<i class="bi bi-check2"></i>';
+  setTimeout(()=>btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1500);
+}
+function doFilter() {
+  const q = document.getElementById('pathSearch').value.toLowerCase().trim();
+  const cat = document.querySelector('#catFilter .btn-accent')?.dataset?.cat || 'all';
+  document.querySelectorAll('.path-section').forEach(s => {
+    s.style.display = (cat === 'all' || s.dataset.section === cat) ? '' : 'none';
+  });
+  document.querySelectorAll('.path-item').forEach(el => {
+    const ok = !q || (el.dataset.search || '').includes(q);
+    el.style.display = ok ? '' : 'none';
+  });
+}
+function setCat(cat) {
+  document.querySelectorAll('#catFilter .btn').forEach(b => {
+    b.classList.toggle('btn-accent', b.dataset.cat === cat);
+    b.classList.toggle('btn-outline-secondary', b.dataset.cat !== cat);
+  });
+  doFilter();
+}
+document.getElementById('pathSearch').addEventListener('input', doFilter);
+</script>
+{% endblock %}

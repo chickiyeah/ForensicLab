@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">다중 해시</span></div>
+<h1 class="page-title"><i class="bi bi-fingerprint me-2 text-accent"></i>다중 해시</h1>
+<p class="page-sub">MD5·SHA1·SHA256·SHA512·SHA3·BLAKE2·CRC32·Adler32 한 번에.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-2" multiple>
+<textarea name="text" class="form-control mb-3" rows="6" placeholder="또는 텍스트"></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-fingerprint me-1"></i>계산</button>
+</form></div></div></div>
+{% else %}{% for h in result.files %}<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ h.name }} — {{ "{:,}".format(h.size) }} B</h6>
+<table class="table table-sm" style="font-size:.78rem;"><tbody>
+{% for alg, val in h.items() %}{% if alg not in ('name','size') %}
+<tr><td class="text-dim" style="width:120px;">{{ alg.upper() }}</td><td><code style="font-size:.7rem; word-break:break-all;">{{ val }}</code></td></tr>
+{% endif %}{% endfor %}
+</tbody></table></div>{% endfor %}
+{% endif %}</div>{% endblock %}

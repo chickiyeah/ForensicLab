@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">인코딩 감지·변환</span></div>
+<h1 class="page-title"><i class="bi bi-translate me-2 text-accent"></i>인코딩 감지·변환</h1>
+<p class="page-sub">BOM 감지 + 자동 인코딩 추정 + 변환</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-2">
+<textarea name="text" class="form-control mb-2" rows="6"></textarea>
+<label class="form-label-sm">대상 인코딩</label>
+<select name="target" class="form-select mb-3">
+<option>utf-8</option><option>utf-16</option><option>cp949</option>
+<option>euc-kr</option><option>latin1</option><option>ascii</option>
+</select><button class="btn btn-accent w-100">분석</button></form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<table class="table table-sm" style="font-size:.84rem;">
+{% if result.bom_detected %}<tr><td class="text-dim">BOM</td><td><strong>{{ result.bom_detected }}</strong></td></tr>{% endif %}
+<tr><td class="text-dim">감지된 인코딩</td><td><strong>{{ result.detected_encoding }}</strong> ({{ result.confidence }}%)</td></tr>
+<tr><td class="text-dim">대상</td><td>{{ result.target }}</td></tr>
+<tr><td class="text-dim">변환 크기</td><td>{{ result.converted_size }} bytes</td></tr>
+</table>{% if result.preview %}<div class="mt-2"><strong>미리보기:</strong>
+<pre style="background:var(--bg); padding:.4rem; font-size:.78rem; max-height:300px; overflow:auto;">{{ result.preview }}</pre></div>{% endif %}
+</div>{% endif %}</div></div></div>{% endblock %}

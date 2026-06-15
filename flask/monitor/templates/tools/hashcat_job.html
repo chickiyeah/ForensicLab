@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Hashcat 통합</span></div>
+<h1 class="page-title"><i class="bi bi-shield-lock me-2 text-accent"></i>Hashcat 통합</h1>
+<p class="page-sub">오프라인 해시 크래킹 (MD5·SHA·NTLM·ZIP·Office·BitLocker 등 30+ 모드)</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel">
+<form method="POST">
+<label class="form-label-sm">해시 모드</label>
+<select name="mode" class="form-select mb-3">
+{% for m, name in modes.items() %}<option value="{{ m }}">{{ m }}: {{ name }}</option>{% endfor %}
+</select>
+<label class="form-label-sm">공격 모드</label>
+<select name="attack_mode" class="form-select mb-3">
+<option value="0">0: Straight (사전 공격)</option>
+<option value="3">3: Mask (무차별)</option>
+<option value="6">6: Hybrid (사전+마스크)</option>
+</select>
+<label class="form-label-sm">해시 (한 줄에 하나)</label>
+<textarea name="hashes" class="form-control mb-3" rows="5" style="font-family:monospace; font-size:.74rem;" required></textarea>
+<label class="form-label-sm">사전 / 마스크</label>
+<textarea name="wordlist" class="form-control mb-3" rows="8" style="font-family:monospace; font-size:.74rem;" placeholder="password&#10;admin&#10;123456&#10;...&#10;또는 마스크: ?u?l?l?l?l?d?d" required></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-shield-lock me-1"></i>크래킹 시작</button>
+</form><div class="text-dim small mt-2"><i class="bi bi-info-circle me-1"></i>
+서버 CPU 모드로 실행 (GPU 없음). 30분 타임아웃.</div>
+</div></div></div>
+{% else %}<div class="alert alert-success">백그라운드 작업: <a href="{{ result.redirect }}">{{ result.job_id }}</a></div>
+<script>setTimeout(()=>location.href='{{ result.redirect }}', 1500);</script>{% endif %}
+</div>{% endblock %}

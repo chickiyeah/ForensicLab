@@ -1,4 +1,4 @@
-"""ForensicLab 9차 확장 — 암호화 해제 (Decryption / Unlock) 통합 도구
+﻿"""ForensicLab 9차 확장 — 암호화 해제 (Decryption / Unlock) 통합 도구
 
 /tools/unlock — 암호화된 볼륨·문서를 복호화하여 내부 파일을 추출.
 
@@ -32,8 +32,8 @@ from pathlib import Path
 
 from flask import request, render_template, jsonify, send_file, abort
 
-from hospital.views.tools import bp, _save_log
-from hospital.views.tools_extra5 import _new_job, _job_log, _coc_record
+from monitor.views.tools import bp, _save_log
+from monitor.views.tools_extra5 import _new_job, _job_log, _coc_record
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -803,7 +803,7 @@ def unlock_extract_file(token):
 # 도움말 등록
 # ════════════════════════════════════════════════════════════════════
 try:
-    from hospital.views.tools_extra7 import _TOOL_HELP
+    from monitor.views.tools_extra7 import _TOOL_HELP
     _TOOL_HELP['unlock'] = {
         'what': '암호화 볼륨·문서를 복호화 — BitLocker·LUKS·VeraCrypt·암호 ZIP/Office/PDF.',
         'how': '1) 파일 업로드 → 2) 포맷 자동탐지 → 3) [암호 알 때] 암호/복구키 입력 후 복호화 '

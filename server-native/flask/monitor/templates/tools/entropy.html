@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">엔트로피·시그니처</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-bar-chart-line-fill me-2 text-accent"></i>엔트로피·시그니처 분석</h1>
+    <p class="page-sub">파일 전체 엔트로피와 슬라이딩 윈도우 그래프, 50+ 매직바이트 시그니처를 확인합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  {% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+
+  {% if not result %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" multiple class="form-control mb-3" required>
+          <button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <strong>{{ result.filename }}</strong>
+    <span class="text-dim small">({{ result.file_size }} bytes)</span>
+    <span class="ms-auto"><a href="/tools/entropy" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>새 파일</a></span>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-5">
+      <div class="tool-panel">
+        <div class="text-center mb-3">
+          <div style="font-size:3rem; font-weight:700; color:{% if result.overall_entropy > 7 %}#ef4444{% elif result.overall_entropy > 6 %}#f59e0b{% else %}var(--accent){% endif %};">
+            {{ result.overall_entropy }}
+          </div>
+          <div class="text-dim small">/ 최대 8.0 (Shannon 엔트로피)</div>
+        </div>
+        <div class="alert" style="background:rgba(0,212,255,.08); border:1px solid var(--border); border-radius:.4rem; padding:.5rem .75rem; font-size:.82rem;">
+          <i class="bi bi-info-circle me-1"></i>{{ result.verdict }}
+        </div>
+        <div class="d-flex gap-3 mt-2 small text-dim">
+          <span><i class="bi bi-circle-fill text-danger me-1"></i>고엔트로피 윈도우: {{ result.high_windows }}</span>
+          <span><i class="bi bi-circle-fill" style="color:#22c55e"></i> 저엔트로피 윈도우: {{ result.low_windows }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-tag me-2"></i>매칭된 시그니처</h6>
+        {% if result.signatures %}
+          {% for s in result.signatures %}
+          <div class="d-flex align-items-center gap-2 mb-2 p-2" style="background:var(--bg); border-radius:.4rem;">
+            <code class="text-accent">{{ s.sig }}</code>
+            <strong>{{ s.label }}</strong>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-dim small">매칭된 시그니처 없음 (RAW 또는 미지원 포맷)</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tool-panel">
+    <h6 class="panel-title"><i class="bi bi-graph-up me-2"></i>엔트로피 그래프 ({{ result.window_size }} bytes 윈도우, {{ result.windows|length }}개 지점)</h6>
+    <canvas id="entChart" style="width:100%; height:240px;"></canvas>
+  </div>
+
+  <script>
+  const WINS = {{ result.windows | tojson }};
+  const cvs = document.getElementById('entChart');
+  const ctx = cvs.getContext('2d');
+  function draw() {
+    const W = cvs.clientWidth, H = 240;
+    cvs.width = W; cvs.height = H;
+    ctx.clearRect(0,0,W,H);
+    if (!WINS.length) return;
+    const maxE = 8;
+    const xs = WINS.length;
+    // 격자
+    ctx.strokeStyle = '#1a2744'; ctx.lineWidth = 1;
+    for (let i=0;i<=8;i+=2) {
+      const y = H - (i/maxE)*(H-20) - 10;
+      ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W-10, y); ctx.stroke();
+      ctx.fillStyle = '#6b7280'; ctx.font = '11px monospace';
+      ctx.fillText(i.toFixed(1), 5, y+4);
+    }
+    // 영역
+    ctx.beginPath();
+    for (let i=0;i<xs;i++) {
+      const x = 40 + (i/(xs-1))*(W-50);
+      const y = H - (WINS[i][1]/maxE)*(H-20) - 10;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W-10, H-10); ctx.lineTo(40, H-10); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'rgba(0,212,255,.5)'); grad.addColorStop(1,'rgba(0,212,255,.05)');
+    ctx.fillStyle = grad; ctx.fill();
+    // 선
+    ctx.beginPath(); ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1.5;
+    for (let i=0;i<xs;i++) {
+      const x = 40 + (i/(xs-1))*(W-50);
+      const y = H - (WINS[i][1]/maxE)*(H-20) - 10;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // 임계선
+    ctx.strokeStyle = '#ef444466'; ctx.setLineDash([4,4]);
+    const yhi = H - (7.5/maxE)*(H-20) - 10;
+    ctx.beginPath(); ctx.moveTo(40,yhi); ctx.lineTo(W-10,yhi); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444'; ctx.fillText('암호화 임계 7.5', W-100, yhi-3);
+  }
+  draw(); window.addEventListener('resize', draw);
+  </script>
+  {% endif %}
+</div>
+{% endblock %}

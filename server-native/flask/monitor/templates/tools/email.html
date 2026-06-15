@@ -1,0 +1,646 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">이메일 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-envelope-open me-2 text-accent"></i>이메일 분석</h1>
+    <p class="page-sub">EML · MSG · MBOX · EMLX 파일의 헤더·본문·첨부파일·링크를 파싱하고 스푸핑·위장 여부를 탐지합니다.</p>
+  </div>
+</div>
+
+<div class="{% if result and result.mbox_mode %}container-fluid px-3{% else %}container{% endif %} pb-5">
+
+  {% if error %}
+  <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+  {% endif %}
+
+  {% if not result %}
+  <!-- ───────────────── 업로드 폼 ───────────────── -->
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">이메일 파일 선택</label>
+            <input type="file" name="file" multiple class="form-control"
+                   accept=".eml,.msg,.mbox,.mbx,.emlx,.txt" required>
+            <div class="form-hint mt-2 d-flex flex-wrap gap-1 align-items-center">
+              <span class="tag" style="font-size:.7rem;">EML</span>
+              <span class="tag" style="font-size:.7rem;">MSG</span>
+              <span class="tag" style="font-size:.7rem;">MBOX</span>
+              <span class="tag" style="font-size:.7rem;">EMLX</span>
+              <span class="text-dim" style="font-size:.78rem;">지원 · Thunderbird mbox 무제한</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-search me-1"></i>분석 시작
+          </button>
+        </form>
+      </div>
+
+      <!-- 포맷 안내 카드 -->
+      <div class="row g-2 mt-2">
+        <div class="col-6">
+          <div style="padding:.75rem; background:var(--bg-card); border-radius:.5rem; border:1px solid var(--border);">
+            <div style="color:var(--accent); font-size:.8rem; font-weight:600; margin-bottom:.3rem;"><i class="bi bi-envelope me-1"></i>EML / EMLX</div>
+            <div class="text-dim" style="font-size:.75rem;">표준 RFC 2822 메일 파일. macOS Mail 백업(.emlx)도 지원.</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div style="padding:.75rem; background:var(--bg-card); border-radius:.5rem; border:1px solid var(--border);">
+            <div style="color:#a78bfa; font-size:.8rem; font-weight:600; margin-bottom:.3rem;"><i class="bi bi-microsoft me-1"></i>MSG</div>
+            <div class="text-dim" style="font-size:.75rem;">Outlook .msg 파일. 첨부파일·서식 완전 지원.</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div style="padding:.75rem; background:var(--bg-card); border-radius:.5rem; border:1px solid var(--border);">
+            <div style="color:#f59e0b; font-size:.8rem; font-weight:600; margin-bottom:.3rem;"><i class="bi bi-collection me-1"></i>MBOX</div>
+            <div class="text-dim" style="font-size:.75rem;">Thunderbird 로컬 폴더 파일. 수천 개 메일 무제한 분석.</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div style="padding:.75rem; background:var(--bg-card); border-radius:.5rem; border:1px solid var(--border);">
+            <div style="color:#10b981; font-size:.8rem; font-weight:600; margin-bottom:.3rem;"><i class="bi bi-shield-check me-1"></i>보안 분석</div>
+            <div class="text-dim" style="font-size:.75rem;">SPF·DKIM·Reply-To 위장, 발신 IP, 전송 경로 자동 탐지.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% elif result.mbox_mode %}
+  <!-- ═══════════════════════════════════════════════════
+       MBOX 게시판 모드 — 분할 레이아웃
+  ═══════════════════════════════════════════════════ -->
+  <!-- 툴바 -->
+  <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+    <div class="d-flex align-items-center gap-2">
+      <span id="mailCountBadge" style="background:var(--accent); color:#000; font-size:.72rem; font-weight:700;
+                   padding:.2rem .55rem; border-radius:999px;">{{ result.mbox_count }}</span>
+      <span style="font-weight:600; color:var(--text);">개 메일</span>
+      <span id="mailCountTotal" class="text-dim" style="font-size:.82rem;">MBOX 아카이브</span>
+    </div>
+    <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+      <div class="position-relative">
+        <i class="bi bi-search position-absolute text-dim"
+           style="left:.6rem; top:50%; transform:translateY(-50%); font-size:.8rem;"></i>
+        <input type="text" id="boardSearch" class="form-control form-control-sm"
+               placeholder="발신자·제목·날짜 검색..."
+               style="padding-left:2rem; width:210px; background:var(--bg-card); border-color:var(--border);">
+      </div>
+      <select id="sortSelect" class="form-select form-select-sm"
+              style="width:auto; background:var(--bg-card); border-color:var(--border); color:var(--text);"
+              onchange="sortEmails()">
+        <option value="idx_asc">번호 ↑</option>
+        <option value="idx_desc">번호 ↓</option>
+        <option value="date_desc">날짜 최신</option>
+        <option value="date_asc">날짜 오래된</option>
+        <option value="sender_asc">발신자 ↑</option>
+        <option value="att_desc">첨부 많은순</option>
+      </select>
+      <a href="/tools/email" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>새 파일
+      </a>
+    </div>
+  </div>
+
+  <!-- 분할 패널 -->
+  <div style="display:grid; grid-template-columns:380px 1fr; gap:0;
+              height:calc(100vh - 240px); min-height:520px;
+              border:1px solid var(--border); border-radius:.6rem; overflow:hidden;">
+
+    <!-- ── 왼쪽: 목록 ── -->
+    <div style="border-right:1px solid var(--border); overflow-y:auto; background:var(--bg);">
+      <div id="emailList">
+        {% for mail in result.mbox_all %}
+        {% set sender_short = (mail.sender or '(없음)')[:22] %}
+        {% set first_char = (mail.sender or '?')[0] | upper %}
+        <div class="mail-item {% if mail.spoof_hint %}mail-danger{% endif %}"
+             data-idx="{{ loop.index0 }}"
+             onclick="showDetail({{ loop.index0 }})"
+             data-search="{{ (mail.sender or '') | lower }} {{ (mail.subject or '') | lower }} {{ (mail.date or '') | lower }}">
+          <div class="mail-avatar {% if mail.spoof_hint %}avatar-danger{% endif %}">{{ first_char }}</div>
+          <div class="mail-info">
+            <div class="mail-sender">
+              {% if mail.spoof_hint %}<i class="bi bi-exclamation-triangle-fill text-danger me-1" style="font-size:.65rem;"></i>{% endif %}
+              {{ sender_short }}
+            </div>
+            <div class="mail-subject">{{ mail.subject or '(제목 없음)' }}</div>
+            <div class="mail-meta">
+              <span>{{ (mail.date or '')[:16] }}</span>
+              {% if mail.attachments %}<span class="att-badge"><i class="bi bi-paperclip"></i> {{ mail.attachments|length }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ── 오른쪽: 상세 ── -->
+    <div style="overflow-y:auto; background:var(--bg-card);">
+      <div id="detailEmpty" class="flex-column align-items-center justify-content-center h-100 text-dim" style="display:flex;">
+        <i class="bi bi-cursor" style="font-size:3rem; margin-bottom:1rem; opacity:.4;"></i>
+        <div style="font-size:.9rem;">왼쪽 목록에서 메일을 클릭하세요</div>
+        <div style="font-size:.78rem; margin-top:.4rem; opacity:.6;">키보드 ↑↓ 로 탐색 가능</div>
+      </div>
+
+      <div id="detailPanel" style="display:none; padding:1.5rem;">
+
+        <!-- 스푸핑 배너 -->
+        <div id="spoofBanner" style="display:none; margin-bottom:1rem; padding:.85rem 1rem;
+             background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.4); border-radius:.5rem;">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:1rem; margin-top:.15rem; flex-shrink:0;"></i>
+            <div>
+              <div style="font-weight:700; color:#f87171; font-size:.88rem; margin-bottom:.25rem;">발신자 위장 의심</div>
+              <div id="spoofText" style="font-size:.82rem; color:#fca5a5;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 제목 + 번호 -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h5 id="detSubject" style="font-size:1rem; font-weight:700; color:var(--text); flex:1; padding-right:1rem; margin:0; line-height:1.4;"></h5>
+          <span id="detIdx" class="text-dim" style="font-size:.78rem; white-space:nowrap;"></span>
+        </div>
+
+        <!-- 기본 정보 그리드 -->
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:.5rem; padding:1rem; margin-bottom:1rem;">
+          <div class="email-field-grid">
+            <div class="ef-row"><span class="ef-label">발신자</span><span id="detFrom" class="ef-val"></span></div>
+            <div class="ef-row"><span class="ef-label">수신자</span><span id="detTo" class="ef-val"></span></div>
+            <div id="detCcRow" class="ef-row" style="display:none;"><span class="ef-label">참조</span><span id="detCc" class="ef-val"></span></div>
+            <div class="ef-row"><span class="ef-label">날짜</span><span id="detDate" class="ef-val"></span></div>
+            <div class="ef-row"><span class="ef-label">DKIM</span><span id="detDkim" class="ef-val"></span></div>
+            <div id="detXipRow" class="ef-row" style="display:none;"><span class="ef-label">발신 IP</span><code id="detXip" class="ef-val" style="font-size:.8rem;"></code></div>
+            <div id="detReplyRow" class="ef-row" style="display:none;"><span class="ef-label">Reply-To</span><span id="detReply" class="ef-val"></span></div>
+          </div>
+        </div>
+
+        <!-- 전송 경로 -->
+        <div id="detHopsPanel" style="display:none; margin-bottom:1rem;">
+          <div class="det-section-title"><i class="bi bi-diagram-3 me-2"></i>전송 경로</div>
+          <div id="detHops" style="display:flex; flex-direction:column; gap:.4rem;"></div>
+        </div>
+
+        <!-- 첨부파일 -->
+        <div id="detAttPanel" style="display:none; margin-bottom:1rem;">
+          <div class="det-section-title"><i class="bi bi-paperclip me-2"></i>첨부파일 <span id="detAttCount" style="color:var(--accent);"></span></div>
+          <div id="detAtts" style="display:flex; flex-direction:column; gap:.35rem;"></div>
+        </div>
+
+        <!-- 링크 -->
+        <div id="detLinkPanel" style="display:none; margin-bottom:1rem;">
+          <div class="det-section-title"><i class="bi bi-link-45deg me-2"></i>본문 링크 <span id="detLinkCount" style="color:var(--accent);"></span></div>
+          <div id="detLinks" style="max-height:200px; overflow-y:auto;"></div>
+        </div>
+
+        <!-- 본문 -->
+        <div id="detBodyPanel" style="display:none; margin-bottom:1rem;">
+          <div class="det-section-title"><i class="bi bi-text-paragraph me-2"></i>본문</div>
+          <pre id="detBody" style="white-space:pre-wrap; font-size:.8rem; color:var(--text);
+               background:var(--bg); border:1px solid var(--border); border-radius:.4rem;
+               padding:.75rem; max-height:400px; overflow-y:auto; margin:0; line-height:1.5;"></pre>
+        </div>
+
+        <!-- 전체 헤더 -->
+        <div>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <div class="det-section-title mb-0"><i class="bi bi-list-ul me-2"></i>전체 헤더 <span id="detHdrCount" style="color:var(--accent);"></span></div>
+            <button class="btn btn-sm btn-outline-secondary" id="hdrToggleBtn"
+                    onclick="toggleHdr()" style="padding:.15rem .55rem; font-size:.74rem;">펼치기</button>
+          </div>
+          <div id="detHeaders" style="display:none;">
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:.4rem; overflow:hidden;">
+              <table style="width:100%; font-size:.78rem; border-collapse:collapse;">
+                <tbody id="detHeaderRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 이메일 JSON 임베드 -->
+  <script>
+  const EMAILS = {{ result.mbox_all | tojson }};
+  let currentIdx = -1;
+
+  function showDetail(idx) {
+    const m = EMAILS[idx];
+    currentIdx = idx;
+
+    document.querySelectorAll('.mail-item').forEach(r => r.classList.remove('active'));
+    const activeItem = document.querySelector(`.mail-item[data-idx="${idx}"]`);
+    if (activeItem) { activeItem.classList.add('active'); activeItem.scrollIntoView({block:'nearest'}); }
+
+    document.getElementById('detailEmpty').style.display = 'none';
+    document.getElementById('detailPanel').style.display = 'block';
+
+    document.getElementById('detSubject').textContent = m.subject || '(제목 없음)';
+    document.getElementById('detIdx').textContent = `#${idx+1} / ${EMAILS.length}`;
+    document.getElementById('detFrom').textContent = m.sender || '-';
+    document.getElementById('detTo').textContent = m.to || '-';
+    document.getElementById('detDate').textContent = m.date || '-';
+    document.getElementById('detDkim').innerHTML = m.dkim === '있음'
+      ? '<span style="color:#4ade80; font-weight:600;">있음 ✓</span>'
+      : '<span style="color:#6b7280;">없음</span>';
+
+    setRow('detCcRow', 'detCc', m.cc);
+    setRow('detXipRow', 'detXip', m.x_originating_ip, true);
+    setRow('detReplyRow', 'detReply', m.reply_to);
+
+    // 스푸핑
+    if (m.spoof_hint) {
+      document.getElementById('spoofBanner').style.display = '';
+      document.getElementById('spoofText').textContent = m.spoof_hint;
+    } else { document.getElementById('spoofBanner').style.display = 'none'; }
+
+    // 전송 경로
+    if (m.hops && m.hops.length > 0) {
+      document.getElementById('detHopsPanel').style.display = '';
+      document.getElementById('detHops').innerHTML = m.hops.map((h, i) =>
+        `<div style="display:flex; align-items:flex-start; gap:.6rem; padding:.5rem .7rem;
+                     background:var(--bg); border:1px solid var(--border); border-radius:.4rem; font-size:.79rem;">
+           <span style="color:var(--accent); font-weight:700; min-width:22px;">#${i+1}</span>
+           <div style="flex:1;">
+             <div style="font-family:monospace; color:var(--text);">${escH((h.ips||[]).join(', ')||'IP 없음')}</div>
+             <div style="color:#6b7280; font-size:.74rem; margin-top:.15rem;">${escH(h.timestamp||'')}</div>
+           </div>
+         </div>`
+      ).join('');
+    } else { document.getElementById('detHopsPanel').style.display = 'none'; }
+
+    // 첨부파일
+    if (m.attachments && m.attachments.length > 0) {
+      document.getElementById('detAttPanel').style.display = '';
+      document.getElementById('detAttCount').textContent = m.attachments.length + '개';
+      document.getElementById('detAtts').innerHTML = m.attachments.map(a =>
+        `<div style="display:flex; align-items:center; gap:.6rem; padding:.45rem .7rem;
+                     background:var(--bg); border:1px solid var(--border); border-radius:.4rem; font-size:.8rem;">
+           <i class="bi bi-file-earmark" style="color:var(--accent); flex-shrink:0;"></i>
+           <span style="flex:1; font-weight:500;">${escH(a.name)}</span>
+           <code style="font-size:.73rem; color:#6b7280;">${escH(a.type)}</code>
+           <span style="color:#6b7280; font-size:.74rem; white-space:nowrap;">${(a.size||0).toLocaleString()} B</span>
+         </div>`
+      ).join('');
+    } else { document.getElementById('detAttPanel').style.display = 'none'; }
+
+    // 링크
+    if (m.links && m.links.length > 0) {
+      document.getElementById('detLinkPanel').style.display = '';
+      document.getElementById('detLinkCount').textContent = m.links.length + '개';
+      document.getElementById('detLinks').innerHTML = m.links.map(l =>
+        `<div style="padding:.3rem .5rem; font-size:.78rem; font-family:monospace;
+                     color:var(--accent); word-break:break-all; border-bottom:1px solid var(--border);">${escH(l)}</div>`
+      ).join('');
+    } else { document.getElementById('detLinkPanel').style.display = 'none'; }
+
+    // 본문
+    const body = (m.body_text || '').trim();
+    if (body) {
+      document.getElementById('detBodyPanel').style.display = '';
+      document.getElementById('detBody').textContent = body;
+    } else { document.getElementById('detBodyPanel').style.display = 'none'; }
+
+    // 헤더
+    const hdrs = m.all_headers || [];
+    document.getElementById('detHdrCount').textContent = hdrs.length + '개';
+    document.getElementById('detHeaderRows').innerHTML = hdrs.map(([k,v]) =>
+      `<tr style="border-bottom:1px solid var(--border);">
+         <td style="color:var(--accent); width:170px; vertical-align:top; padding:.3rem .6rem; font-size:.77rem; white-space:nowrap;">${escH(k)}</td>
+         <td style="padding:.3rem .6rem; font-size:.77rem; word-break:break-all; color:var(--text);">${escH(String(v))}</td>
+       </tr>`
+    ).join('');
+    document.getElementById('detHeaders').style.display = 'none';
+    document.getElementById('hdrToggleBtn').textContent = '펼치기';
+  }
+
+  function setRow(rowId, valId, val, isCode) {
+    const row = document.getElementById(rowId);
+    const el  = document.getElementById(valId);
+    if (val) { row.style.display=''; el.textContent = val; }
+    else      { row.style.display='none'; }
+  }
+
+  function toggleHdr() {
+    const el  = document.getElementById('detHeaders');
+    const btn = document.getElementById('hdrToggleBtn');
+    if (el.style.display === 'none') { el.style.display=''; btn.textContent='접기'; }
+    else                             { el.style.display='none'; btn.textContent='펼치기'; }
+  }
+
+  function escH(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // 검색
+  const TOTAL = EMAILS.length;
+  document.getElementById('boardSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    let vis = 0;
+    document.querySelectorAll('.mail-item').forEach(el => {
+      const match = !q || el.dataset.search.includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match) vis++;
+    });
+    document.getElementById('mailCountBadge').textContent = vis;
+    document.getElementById('mailCountTotal').textContent =
+      q ? `/ 전체 ${TOTAL}개` : 'MBOX 아카이브';
+  });
+
+  // 정렬
+  function sortEmails() {
+    const mode = document.getElementById('sortSelect').value;
+    const list = document.getElementById('emailList');
+    const items = Array.from(list.querySelectorAll('.mail-item'));
+    items.sort((a, b) => {
+      const ai = +a.dataset.idx, bi = +b.dataset.idx;
+      const am = EMAILS[ai], bm = EMAILS[bi];
+      if (mode === 'idx_asc')    return ai - bi;
+      if (mode === 'idx_desc')   return bi - ai;
+      if (mode === 'date_desc')  return (bm.date||'').localeCompare(am.date||'');
+      if (mode === 'date_asc')   return (am.date||'').localeCompare(bm.date||'');
+      if (mode === 'sender_asc') return (am.sender||'').localeCompare(bm.sender||'');
+      if (mode === 'att_desc')   return (bm.attachments||[]).length - (am.attachments||[]).length;
+      return 0;
+    });
+    items.forEach(el => list.appendChild(el));
+  }
+
+  // 키보드 내비게이션
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    const visible = Array.from(document.querySelectorAll('.mail-item:not([style*="none"])')).map(r => +r.dataset.idx);
+    if (!visible.length) return;
+    const pos = visible.indexOf(currentIdx);
+    if (e.key === 'ArrowDown') { e.preventDefault(); showDetail(visible[Math.min(pos+1, visible.length-1)]); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); showDetail(visible[Math.max(pos-1, 0)]); }
+  });
+  </script>
+
+  {% else %}
+  <!-- ═══════════════════════════════════════════════════
+       단일 메일 상세 모드 (EML / MSG / EMLX)
+  ═══════════════════════════════════════════════════ -->
+
+  <!-- 스푸핑 배너 -->
+  {% if result.spoof_hint %}
+  <div class="mb-4 p-3 d-flex align-items-start gap-3"
+       style="background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.45); border-radius:.6rem;">
+    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:1.3rem; flex-shrink:0; margin-top:.1rem;"></i>
+    <div>
+      <div style="font-weight:700; color:#f87171; margin-bottom:.3rem;">발신자 위장 의심</div>
+      <div style="font-size:.88rem; color:#fca5a5;">{{ result.spoof_hint }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- 왼쪽: 요약 + 컨트롤 -->
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-envelope me-2"></i>메일 요약</h6>
+        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+          <div class="text-dim" style="font-size:.75rem; margin-bottom:.3rem;">제목</div>
+          <div style="font-weight:600; word-break:break-all; font-size:.9rem;">{{ result.subject or '(없음)' }}</div>
+        </div>
+        <div class="meta-list">
+          <div class="meta-row">
+            <span class="text-dim small">발신자</span>
+            <span class="text-end small" style="word-break:break-all; max-width:65%;">{{ result.sender or '-' }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="text-dim small">수신자</span>
+            <span class="text-end small" style="word-break:break-all; max-width:65%;">{{ result.to or '-' }}</span>
+          </div>
+          {% if result.cc %}
+          <div class="meta-row">
+            <span class="text-dim small">참조</span>
+            <span class="text-end small" style="word-break:break-all; max-width:65%;">{{ result.cc }}</span>
+          </div>
+          {% endif %}
+          <div class="meta-row">
+            <span class="text-dim small">날짜</span>
+            <span class="text-end small">{{ result.date or '-' }}</span>
+          </div>
+          {% if result.reply_to %}
+          <div class="meta-row">
+            <span class="text-dim small">Reply-To</span>
+            <span class="text-end small" style="word-break:break-all; max-width:65%;">{{ result.reply_to }}</span>
+          </div>
+          {% endif %}
+          <div class="meta-row">
+            <span class="text-dim small">DKIM</span>
+            {% if result.dkim == '있음' %}
+            <span style="color:#4ade80; font-weight:600; font-size:.85rem;">있음 ✓</span>
+            {% else %}
+            <span class="text-dim small">없음</span>
+            {% endif %}
+          </div>
+          {% if result.x_originating_ip %}
+          <div class="meta-row">
+            <span class="text-dim small">발신 IP</span>
+            <code style="font-size:.8rem;">{{ result.x_originating_ip }}</code>
+          </div>
+          {% endif %}
+          <div class="meta-row">
+            <span class="text-dim small">첨부파일</span>
+            <span style="color:var(--accent); font-weight:600;">{{ result.attachments|length }}개</span>
+          </div>
+          <div class="meta-row">
+            <span class="text-dim small">링크</span>
+            <span style="color:var(--accent); font-weight:600;">{{ result.links|length }}개</span>
+          </div>
+        </div>
+      </div>
+
+      {% if result.spf %}
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-shield-check me-2"></i>SPF / Authentication</h6>
+        <pre style="font-size:.75rem; white-space:pre-wrap; word-break:break-all;
+                    color:var(--text-dim); margin:0; line-height:1.5;">{{ result.spf }}</pre>
+      </div>
+      {% endif %}
+
+      <div class="mt-3">
+        <a href="/tools/email" class="btn btn-outline-secondary w-100 btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>새 파일 업로드
+        </a>
+      </div>
+    </div>
+
+    <!-- 오른쪽: 상세 -->
+    <div class="col-lg-8">
+      <!-- 전송 경로 -->
+      {% if result.hops %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-diagram-3 me-2"></i>전송 경로 <span style="color:var(--accent);">{{ result.hops|length }}홉</span></h6>
+        <div style="display:flex; flex-direction:column; gap:.4rem;">
+          {% for hop in result.hops %}
+          <div style="display:flex; align-items:flex-start; gap:.7rem; padding:.5rem .75rem;
+                      background:var(--bg); border:1px solid var(--border); border-radius:.4rem; font-size:.8rem;">
+            <span style="color:var(--accent); font-weight:700; min-width:24px;">#{{ loop.index }}</span>
+            <div style="flex:1;">
+              <div style="font-family:monospace;">{{ hop.ips|join(', ') or 'IP 없음' }}</div>
+              {% if hop.timestamp %}
+              <div class="text-dim" style="font-size:.74rem; margin-top:.1rem;">{{ hop.timestamp[:80] }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 첨부파일 -->
+      {% if result.attachments %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-paperclip me-2"></i>첨부파일 <span style="color:var(--accent);">{{ result.attachments|length }}개</span></h6>
+        <div style="display:flex; flex-direction:column; gap:.35rem;">
+          {% for att in result.attachments %}
+          <div style="display:flex; align-items:center; gap:.6rem; padding:.45rem .7rem;
+                      background:var(--bg); border:1px solid var(--border); border-radius:.4rem; font-size:.82rem;">
+            <i class="bi bi-file-earmark" style="color:var(--accent); flex-shrink:0;"></i>
+            <span style="flex:1; font-weight:500;">{{ att.name }}</span>
+            <code style="font-size:.74rem; color:#6b7280;">{{ att.type }}</code>
+            <span class="text-dim" style="font-size:.76rem; white-space:nowrap;">{{ "{:,}".format(att.size) }} B</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 링크 -->
+      {% if result.links %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-link-45deg me-2"></i>본문 링크 <span style="color:var(--accent);">{{ result.links|length }}개</span></h6>
+        <div style="max-height:200px; overflow-y:auto;">
+          {% for link in result.links %}
+          <div style="padding:.3rem .5rem; font-size:.79rem; font-family:monospace;
+                      color:var(--accent); word-break:break-all; border-bottom:1px solid var(--border);">{{ link }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 전체 헤더 -->
+      <div class="tool-panel mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="panel-title mb-0"><i class="bi bi-list-ul me-2"></i>전체 헤더 <span style="color:var(--accent);">{{ result.all_headers|length }}개</span></h6>
+          <button class="btn btn-sm btn-outline-secondary" id="singleHdrBtn"
+                  onclick="toggleSingleHdr()" style="padding:.15rem .55rem; font-size:.74rem;">펼치기</button>
+        </div>
+        <input type="text" id="hdrFilter" class="form-control form-control-sm mb-2"
+               placeholder="헤더 검색..." style="display:none;">
+        <div id="singleHdrWrap" style="display:none;">
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:.4rem; overflow:hidden; max-height:350px; overflow-y:auto;">
+            <table style="width:100%; font-size:.78rem; border-collapse:collapse;" id="hdrTable">
+              <tbody>
+                {% for k, v in result.all_headers %}
+                <tr style="border-bottom:1px solid var(--border);">
+                  <td style="color:var(--accent); width:170px; vertical-align:top; padding:.3rem .6rem; white-space:nowrap;">{{ k }}</td>
+                  <td style="padding:.3rem .6rem; word-break:break-all; color:var(--text);">{{ v }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 본문 -->
+      {% if result.body_text %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-text-paragraph me-2"></i>본문</h6>
+        <pre style="white-space:pre-wrap; font-size:.8rem; color:var(--text);
+                    background:var(--bg); border:1px solid var(--border); border-radius:.4rem;
+                    padding:.75rem; max-height:500px; overflow-y:auto; margin:0; line-height:1.5;">{{ result.body_text }}</pre>
+      </div>
+      {% endif %}
+
+      {% if share_token %}
+      <div class="d-flex gap-2 flex-wrap mt-3">
+        <a href="/tools/history" class="btn btn-sm btn-outline-secondary"><i class="bi bi-archive me-1"></i>이력</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+  function toggleSingleHdr() {
+    const wrap = document.getElementById('singleHdrWrap');
+    const filt = document.getElementById('hdrFilter');
+    const btn  = document.getElementById('singleHdrBtn');
+    const open = wrap.style.display === 'none';
+    wrap.style.display = open ? '' : 'none';
+    filt.style.display = open ? '' : 'none';
+    btn.textContent = open ? '접기' : '펼치기';
+  }
+  document.getElementById('hdrFilter').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#hdrTable tbody tr').forEach(r => {
+      r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  </script>
+
+  {% endif %}
+</div>
+
+<style>
+/* ── 메일 목록 아이템 ── */
+.mail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  padding: .7rem .85rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+  user-select: none;
+}
+.mail-item:hover { background: rgba(255,255,255,.03); }
+.mail-item.active { background: rgba(0,212,255,.07); border-left: 3px solid var(--accent); padding-left: calc(.85rem - 3px); }
+.mail-item.mail-danger { border-left: 3px solid rgba(239,68,68,.6); padding-left: calc(.85rem - 3px); }
+.mail-item.mail-danger.active { background: rgba(239,68,68,.08); border-left-color: #ef4444; }
+
+.mail-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #1e3a5f, #0d2035);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .85rem; color: var(--accent); flex-shrink: 0;
+}
+.mail-avatar.avatar-danger { border-color: rgba(239,68,68,.5); color: #f87171; }
+
+.mail-info { flex: 1; min-width: 0; }
+.mail-sender { font-size: .82rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mail-subject { font-size: .78rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .1rem; }
+.mail-meta { display: flex; align-items: center; gap: .5rem; margin-top: .2rem; font-size: .72rem; color: #6b7280; }
+.att-badge { color: var(--accent); display: flex; align-items: center; gap: .2rem; }
+
+/* ── 상세 필드 그리드 ── */
+.email-field-grid { display: flex; flex-direction: column; gap: .5rem; }
+.ef-row { display: flex; align-items: flex-start; gap: .75rem; font-size: .84rem; }
+.ef-label { color: var(--text-dim); min-width: 64px; font-size: .79rem; padding-top: .05rem; flex-shrink: 0; }
+.ef-val { flex: 1; word-break: break-all; color: var(--text); }
+
+/* ── 섹션 타이틀 ── */
+.det-section-title {
+  font-size: .82rem; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .04em;
+  margin-bottom: .5rem; padding-bottom: .3rem;
+  border-bottom: 1px solid var(--border);
+}
+</style>
+{% endblock %}

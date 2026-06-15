@@ -80,4 +80,4 @@ RUN ln -sf /usr/local/bin/log2timeline /usr/local/bin/log2timeline.py \
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "hospital:create_app()"]
+CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "monitor:create_app()"]

@@ -81,7 +81,16 @@
       "PowerShell(Get-FileHash 'E:\\\\forensic\\\\static\\\\tools\\\\forensiclab_triage_collector.py','E:\\\\forensic\\\\static\\\\tools\\\\forensiclab_registry_collector.py' -Algorithm MD5 | ForEach-Object { '{0} {1}' -f $_.Path.Split\\('\\\\'\\)[-1], $_.Hash })",
       "Bash(python3 *)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(python E:\\\\forensic\\\\_inspect.py)",
+      "PowerShell(python E:\\\\forensic\\\\_inspect2.py)",
+      "PowerShell(python E:\\\\forensic\\\\_rename_deploy.py)",
+      "PowerShell(python E:\\\\forensic\\\\_diag.py)",
+      "PowerShell(python E:\\\\forensic\\\\_size.py)",
+      "PowerShell(python E:\\\\forensic\\\\_pull.py)",
+      "PowerShell(python E:\\\\forensic\\\\_root.py)",
+      "PowerShell(python E:\\\\forensic\\\\_imgcheck.py)",
+      "PowerShell(python E:\\\\forensic\\\\_survey.py)"
     ]
   }
 }

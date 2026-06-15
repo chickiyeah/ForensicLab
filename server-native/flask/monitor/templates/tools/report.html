@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>ForensicLab 분석 리포트 — {{ log.tool_label or log.tool }}</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; color: #111; background: #fff; margin: 0; padding: 20px 40px; }
+    h1 { font-size: 1.6rem; border-bottom: 2px solid #00a8cc; padding-bottom: 8px; margin-bottom: 4px; }
+    .meta { color: #555; font-size: .85rem; margin-bottom: 20px; }
+    .section { margin-bottom: 24px; }
+    .section h2 { font-size: 1rem; background: #f0f4f8; padding: 6px 10px; border-left: 4px solid #00a8cc; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { background: #e8edf2; text-align: left; padding: 6px 8px; border: 1px solid #cdd5de; }
+    td { padding: 5px 8px; border: 1px solid #dde3ea; vertical-align: top; word-break: break-all; }
+    .summary-box { background: #f8fafc; border: 1px solid #dde3ea; border-radius: 4px; padding: 12px 16px; font-size: .9rem; }
+    .footer { margin-top: 40px; color: #888; font-size: .78rem; border-top: 1px solid #dde; padding-top: 10px; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>ForensicLab 분석 리포트</h1>
+  <div class="meta">
+    도구: <strong>{{ log.tool_label or log.tool }}</strong> &nbsp;|&nbsp;
+    {% if log.filename %}파일: <strong>{{ log.filename }}</strong> &nbsp;|&nbsp;{% endif %}
+    {% if log.file_size %}크기: {{ "{:,}".format(log.file_size) }} bytes &nbsp;|&nbsp;{% endif %}
+    생성: {{ log.created.strftime('%Y-%m-%d %H:%M:%S') if log.created else '—' }}
+  </div>
+
+  <div class="section">
+    <h2>분석 요약</h2>
+    <div class="summary-box">{{ log.summary or '요약 없음' }}</div>
+  </div>
+
+  {% if result %}
+  <div class="section">
+    <h2>상세 결과</h2>
+    <table>
+      <tr><th style="width:160px;">항목</th><th>값</th></tr>
+      {% for key, val in result.items() %}
+        {% if val and key not in ('strings', 'events', 'found', 'hex_dump') %}
+        <tr>
+          <td>{{ key }}</td>
+          <td>
+            {% if val is mapping %}
+              {% for k2, v2 in val.items() %}<strong>{{ k2 }}</strong>: {{ v2 }}<br>{% endfor %}
+            {% elif val is iterable and val is not string %}
+              {% for item in val[:20] %}
+                {% if item is mapping %}
+                  {% for k3, v3 in item.items() %}{{ k3 }}={{ v3 }} {% endfor %}<br>
+                {% else %}{{ item }}<br>{% endif %}
+              {% endfor %}
+            {% else %}
+              {{ val }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+    </table>
+  </div>
+
+  {% if result.get('strings') %}
+  <div class="section">
+    <h2>추출된 문자열 (상위 100개)</h2>
+    <table>
+      <tr><th>오프셋</th><th>인코딩</th><th>값</th></tr>
+      {% for s in result.strings[:100] %}
+      <tr>
+        <td>{{ s.offset_hex }}</td>
+        <td>{{ s.enc }}</td>
+        <td>{{ s.value }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if result.get('found') %}
+  <div class="section">
+    <h2>복구된 파일 ({{ result.count }}개)</h2>
+    <table>
+      <tr><th>유형</th><th>오프셋</th><th>섹터</th><th>크기</th></tr>
+      {% for item in result.found[:100] %}
+      <tr>
+        <td>{{ item.type }}</td>
+        <td>{{ item.offset_hex }}</td>
+        <td>{{ item.sector }}</td>
+        <td>{{ "{:,}".format(item.size) }} B</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  {% if result.get('events') %}
+  <div class="section">
+    <h2>타임라인 이벤트 ({{ result.events|length }}개)</h2>
+    <table>
+      <tr><th>타임스탬프</th><th>출처</th><th>유형</th><th>내용</th></tr>
+      {% for ev in result.events[:200] %}
+      <tr>
+        <td style="white-space:nowrap;">{{ ev.ts_str }}</td>
+        <td>{{ ev.source }}</td>
+        <td>{{ ev.type }}</td>
+        <td>{{ ev.detail }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <div class="footer">
+    ForensicLab — 디지털 포렌식 분석 플랫폼 | http://10.8.0.2:405
+    <button onclick="window.print()" style="float:right;padding:4px 12px;background:#00a8cc;color:#fff;border:none;border-radius:3px;cursor:pointer;">PDF로 저장</button>
+  </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-"""
+﻿"""
 ForensicLab 확장 분석 도구
 - /tools/pe       PE/ELF/Mach-O 헤더 분석
 - /tools/entropy  엔트로피·시그니처
@@ -16,7 +16,7 @@ import datetime as _dt
 from collections import Counter
 from flask import request, render_template, send_from_directory, abort
 
-from hospital.views.tools import bp, _save_log
+from monitor.views.tools import bp, _save_log
 
 
 # ============================================================
@@ -1464,7 +1464,7 @@ def _analyze_triage_zip(zip_data: bytes, filename: str, progress_cb=None) -> dic
         elif kind == 'registry_hive' or kind == 'registry_ntuser' or kind == 'registry_usrclass' or kind == 'amcache':
             # registry는 _parse_registry 사용
             try:
-                from hospital.views.tools import _parse_registry
+                from monitor.views.tools import _parse_registry
                 r = _parse_registry(data, base)
                 summary = {
                     'filename': base, 'size': info.file_size,
@@ -1588,7 +1588,7 @@ def _analyze_triage_zip(zip_data: bytes, filename: str, progress_cb=None) -> dic
 
 def _triage_job(data, filename, _job_id=None):
     """트리아지 ZIP 백그라운드 분석"""
-    from hospital.views.tools_extra5 import _job_log
+    from monitor.views.tools_extra5 import _job_log
     _job_log(_job_id, f'ZIP 압축 해제 시작 ({len(data)//1024} KB)', 2)
     try:
         def cb(idx, total, fname, kind):
@@ -1608,7 +1608,7 @@ def _triage_job(data, filename, _job_id=None):
 @bp.route('/triage/result/<job_id>')
 def triage_result(job_id):
     """백그라운드로 처리된 트리아지 결과를 triage.html 사람용 화면으로 표시"""
-    from hospital.views.tools_extra5 import _JOB_STORE, _JOB_LOCK
+    from monitor.views.tools_extra5 import _JOB_STORE, _JOB_LOCK
     from flask import redirect
     with _JOB_LOCK:
         j = _JOB_STORE.get(job_id)
@@ -1645,7 +1645,7 @@ def triage_tool():
                     error = f'분석 오류: {e}'
             else:
                 # 백그라운드 작업 등록
-                from hospital.views.tools_extra5 import _new_job
+                from monitor.views.tools_extra5 import _new_job
                 job_id = _new_job(f'Triage: {f.filename} ({len(data)//1024}KB)',
                                   _triage_job, data, f.filename)
                 from flask import redirect

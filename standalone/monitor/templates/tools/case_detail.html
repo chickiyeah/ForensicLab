@@ -1,0 +1,182 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools/case" class="text-dim text-decoration-none small">사건 관리</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">{{ case.case_number }}</span></div>
+<h1 class="page-title"><i class="bi bi-folder-fill me-2 text-accent"></i>{{ case.case_number }} — {{ case.name }}</h1>
+<p class="page-sub">증거·발견사항·메모 + 멤버 권한 관리</p></div></div>
+<div class="container pb-5">
+
+{% set role_badge = {'owner':('👑 소유자','#00d4ff'),'admin':('🛡 관리자','#ef4444'),'editor':('✏️ 수정자','#f59e0b'),'viewer':('👁 검토자','#9ca3af')} %}
+
+<div class="tool-panel mb-3">
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+<div>
+<div class="text-dim small">분석가: {{ case.examiner }} · 우선순위: {{ case.priority }} · 상태: <span class="tag" style="background:{% if case.status=='closed' %}rgba(107,114,128,.15);color:#9ca3af{% else %}rgba(34,197,94,.15);color:#22c55e{% endif %};">{{ case.status }}</span></div>
+<div class="text-dim small">생성: {{ case.created_at }} · 소유자: <strong style="color:var(--accent)">{{ case.owner }}</strong></div>
+{% set rb = role_badge.get(my_role, ('?','#6b7280')) %}
+<div class="mt-1"><strong>내 권한:</strong> <span class="tag" style="background:{{ rb[1] }}22;color:{{ rb[1] }};">{{ rb[0] }}</span> ({{ current_user }})</div>
+</div>
+<div class="d-flex gap-2">
+<a href="/tools/case/{{ case.id }}/report" class="btn btn-sm btn-accent"><i class="bi bi-file-earmark-pdf me-1"></i>PDF 보고서</a>
+{% if case.status != 'closed' and can_admin %}<form method="POST" style="display:inline;">
+<input type="hidden" name="action" value="close">
+<button class="btn btn-sm btn-outline-secondary">사건 종료</button></form>{% endif %}
+</div></div>
+{% if case.description %}<div class="mt-2 p-2" style="background:var(--bg); border-radius:.4rem;">{{ case.description }}</div>{% endif %}
+</div>
+
+<ul class="nav nav-tabs mb-3" style="border-color:var(--border);">
+<li class="nav-item"><a class="nav-link active text-accent" data-bs-toggle="tab" href="#tab-ev">증거 ({{ evidence|length }})</a></li>
+<li class="nav-item"><a class="nav-link text-dim" data-bs-toggle="tab" href="#tab-fd">발견사항 ({{ findings|length }})</a></li>
+<li class="nav-item"><a class="nav-link text-dim" data-bs-toggle="tab" href="#tab-bm">북마크 ({{ bookmarks|length }})</a></li>
+<li class="nav-item"><a class="nav-link text-dim" data-bs-toggle="tab" href="#tab-members"><i class="bi bi-people-fill me-1"></i>멤버 ({{ members|length + 1 }})</a></li>
+</ul>
+
+<div class="tab-content">
+<!-- 증거 -->
+<div class="tab-pane fade show active" id="tab-ev">
+{% if can_edit %}
+<div class="tool-panel mb-3"><form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="add_evidence">
+<div class="row g-2"><div class="col-md-4"><input type="file" name="file" class="form-control" required></div>
+<div class="col-md-3"><input type="text" name="tool" class="form-control" placeholder="사용 도구"></div>
+<div class="col-md-3"><input type="text" name="tags" class="form-control" placeholder="태그 (쉼표)"></div>
+<div class="col-md-2"><button class="btn btn-accent w-100">추가</button></div></div>
+<textarea name="notes" class="form-control mt-2" rows="2" placeholder="메모"></textarea>
+</form></div>
+{% if my_logs %}
+<div class="tool-panel mb-3" style="border-left:3px solid var(--accent);">
+<h6 class="panel-title"><i class="bi bi-clock-history me-2"></i>내 최근 분석 이력 → 증거로 첨부</h6>
+<div class="table-responsive" style="max-height:240px; overflow-y:auto;">
+<table class="table table-sm mb-0" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>도구</th><th>파일</th><th>요약</th><th>시각</th><th></th></tr></thead><tbody>
+{% for log in my_logs %}<tr>
+<td>{{ log.tool_label or log.tool }}</td>
+<td>{{ log.filename or '-' }}</td>
+<td class="text-dim" style="max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ log.summary or '' }}</td>
+<td><code style="font-size:.7rem;">{{ log.created.strftime('%Y-%m-%d %H:%M') }}</code></td>
+<td class="text-end"><form method="POST" class="d-inline" data-no-overlay="true">
+<input type="hidden" name="action" value="attach_log">
+<input type="hidden" name="log_id" value="{{ log.id }}">
+<button class="btn btn-sm btn-outline-accent py-0 px-2" style="font-size:.7rem;" title="이 분석을 증거로 첨부"><i class="bi bi-plus-lg"></i> 첨부</button>
+</form></td></tr>{% endfor %}</tbody></table></div>
+<div class="text-dim small mt-2"><i class="bi bi-info-circle me-1"></i>첨부하면 위 증거 목록에 <span class="tag">분석이력</span> 태그로 추가됩니다.</div>
+</div>
+{% endif %}
+{% else %}<div class="alert alert-secondary small mb-3"><i class="bi bi-eye me-1"></i>읽기 전용 (viewer) — 수정자 이상 권한 필요</div>{% endif %}
+<div class="tool-panel"><table class="table table-sm" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>파일</th><th>SHA-256</th><th>크기</th><th>도구</th><th>업로드</th><th>태그</th></tr></thead><tbody>
+{% for e in evidence %}<tr><td><strong>{{ e.filename }}</strong></td>
+<td><code style="font-size:.7rem;">{{ e.sha256[:16] }}…</code></td>
+<td>{{ "{:,}".format(e.size) }}</td>
+<td>{{ e.tool_used }}</td><td><code style="font-size:.7rem;">{{ e.uploaded_at[:19] }}</code></td>
+<td>{{ e.tags }}</td></tr>{% endfor %}</tbody></table></div></div>
+
+<!-- 발견사항 -->
+<div class="tab-pane fade" id="tab-fd">
+{% if can_edit %}
+<div class="tool-panel mb-3"><form method="POST">
+<input type="hidden" name="action" value="add_finding">
+<div class="row g-2 mb-2"><div class="col-md-2"><select name="severity" class="form-select">
+<option value="low">낮음</option><option value="medium" selected>중간</option>
+<option value="high">높음</option><option value="critical">긴급</option></select></div>
+<div class="col-md-3"><input type="text" name="category" class="form-control" placeholder="카테고리"></div>
+<div class="col-md-7"><input type="text" name="title" class="form-control" placeholder="제목" required></div></div>
+<textarea name="description" class="form-control mb-2" rows="3" placeholder="상세 설명"></textarea>
+<input type="text" name="attack_techniques" class="form-control mb-2" placeholder="MITRE ATT&CK (예: T1059, T1547)">
+<button class="btn btn-accent">발견 추가</button></form></div>
+{% endif %}
+{% for f in findings %}<div class="tool-panel mb-2" style="border-left:3px solid {% if f.severity=='critical' %}#dc2626{% elif f.severity=='high' %}#ef4444{% elif f.severity=='medium' %}#f59e0b{% else %}#3b82f6{% endif %};">
+<div class="d-flex justify-content-between"><strong>{{ f.title }}</strong>
+<span class="tag">{{ f.severity }}</span></div>
+<div class="text-dim small">{{ f.category }} · {{ f.created_at[:19] }}</div>
+<div class="mt-1">{{ f.description }}</div>
+{% if f.attack_techniques %}<div class="mt-1 small">ATT&CK: <code>{{ f.attack_techniques }}</code></div>{% endif %}
+</div>{% endfor %}</div>
+
+<!-- 북마크 -->
+<div class="tab-pane fade" id="tab-bm">
+{% if can_edit %}
+<div class="tool-panel mb-3"><form method="POST">
+<input type="hidden" name="action" value="add_bookmark">
+<input type="text" name="title" class="form-control mb-2" placeholder="북마크 제목" required>
+<textarea name="content" class="form-control mb-2" rows="3"></textarea>
+<input type="text" name="tags" class="form-control mb-2" placeholder="태그">
+<button class="btn btn-accent">북마크 추가</button></form></div>
+{% endif %}
+{% for b in bookmarks %}<div class="tool-panel mb-2">
+<strong>{{ b.title }}</strong> <span class="text-dim small">{{ b.created_at[:19] }}</span>
+<div class="mt-1">{{ b.content }}</div>
+{% if b.tags %}<div class="mt-1">{% for t in b.tags.split(',') %}<span class="tag me-1">{{ t.strip() }}</span>{% endfor %}</div>{% endif %}
+</div>{% endfor %}</div>
+
+<!-- 멤버 관리 -->
+<div class="tab-pane fade" id="tab-members">
+<div class="tool-panel mb-3">
+<h6 class="panel-title"><i class="bi bi-people-fill me-2"></i>사건 멤버</h6>
+<table class="table table-sm" style="font-size:.85rem;">
+<thead><tr class="text-dim"><th>사용자</th><th>역할</th><th>추가일</th><th>추가한 사람</th>{% if can_admin %}<th>액션</th>{% endif %}</tr></thead>
+<tbody>
+<tr>
+<td><strong style="color:#00d4ff;">{{ case.owner }}</strong> {% if case.owner == current_user %}<span class="badge bg-info ms-1" style="font-size:.6rem">나</span>{% endif %}</td>
+<td><span class="tag" style="background:rgba(0,212,255,.15);color:#00d4ff;">👑 소유자</span></td>
+<td><code style="font-size:.72rem;">{{ case.created_at[:19] }}</code></td>
+<td>(자기 자신)</td>
+{% if can_admin %}<td><span class="text-dim small">변경 불가</span></td>{% endif %}
+</tr>
+{% for m in members %}
+{% set rb = role_badge.get(m.role, ('?','#6b7280')) %}
+<tr>
+<td>{{ m.username }} {% if m.username == current_user %}<span class="badge bg-info ms-1" style="font-size:.6rem">나</span>{% endif %}</td>
+<td><span class="tag" style="background:{{ rb[1] }}22;color:{{ rb[1] }};">{{ rb[0] }}</span></td>
+<td><code style="font-size:.72rem;">{{ m.added_at[:19] }}</code></td>
+<td>{{ m.added_by }}</td>
+{% if can_admin %}
+<td>
+<form method="POST" style="display:inline-flex; gap:.3rem;">
+<input type="hidden" name="action" value="change_role">
+<input type="hidden" name="username" value="{{ m.username }}">
+<select name="role" class="form-select form-select-sm" style="width:auto; font-size:.75rem;">
+<option value="admin" {% if m.role == 'admin' %}selected{% endif %}>관리자</option>
+<option value="editor" {% if m.role == 'editor' %}selected{% endif %}>수정자</option>
+<option value="viewer" {% if m.role == 'viewer' %}selected{% endif %}>검토자</option>
+</select>
+<button class="btn btn-sm btn-outline-secondary" style="padding:.1rem .4rem; font-size:.7rem;">변경</button>
+</form>
+<form method="POST" style="display:inline; margin-left:.3rem;" onsubmit="return confirm('{{ m.username }} 멤버를 제거하시겠습니까?');">
+<input type="hidden" name="action" value="remove_member">
+<input type="hidden" name="username" value="{{ m.username }}">
+<button class="btn btn-sm btn-outline-danger" style="padding:.1rem .4rem; font-size:.7rem;">제거</button>
+</form>
+</td>
+{% endif %}
+</tr>
+{% endfor %}
+</tbody></table>
+
+{% if can_admin %}
+<div class="mt-3"><h6 class="panel-title"><i class="bi bi-person-plus-fill me-2"></i>멤버 추가</h6>
+<form method="POST"><div class="row g-2">
+<input type="hidden" name="action" value="add_member">
+<div class="col-md-5"><input type="text" name="username" class="form-control" placeholder="사용자 ID" required></div>
+<div class="col-md-4"><select name="role" class="form-select">
+<option value="viewer">👁 검토자 (읽기 전용)</option>
+<option value="editor" selected>✏️ 수정자 (증거·발견·메모 추가)</option>
+<option value="admin">🛡 관리자 (멤버·사건 관리)</option>
+</select></div>
+<div class="col-md-3"><button class="btn btn-accent w-100"><i class="bi bi-plus me-1"></i>추가</button></div>
+</div></form></div>
+
+<div class="mt-3 p-2 small text-dim" style="background:var(--bg); border-radius:.4rem;">
+<strong>권한 설명:</strong>
+<ul class="mb-0 mt-1">
+<li><strong>👑 소유자:</strong> 모든 권한 (변경 불가)</li>
+<li><strong>🛡 관리자:</strong> 사건 정보·멤버 관리·종료 + 수정자 권한 모두</li>
+<li><strong>✏️ 수정자:</strong> 증거·발견사항·북마크 추가</li>
+<li><strong>👁 검토자:</strong> 읽기 전용 (PDF 보고서 다운로드 가능)</li>
+</ul></div>
+{% endif %}
+</div>
+</div>
+
+</div>
+</div>{% endblock %}

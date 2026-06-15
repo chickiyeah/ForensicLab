@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">ZIP 암호 해제</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-file-earmark-zip me-2 text-accent"></i>ZIP 암호 해제</h1>
+    <p class="page-sub">내장 자주쓰는 암호 목록·사용자 wordlist·브루트포스로 ZIP 파일 암호를 복구합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-gear me-2"></i>설정</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label-sm">ZIP 파일</label>
+            <input type="file" name="file" multiple class="form-control" accept=".zip" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-sm">공격 방식</label>
+            <select name="mode" class="form-select" id="modeSelect" onchange="toggleBF()">
+              <option value="common">자주 쓰는 암호 (내장 50개)</option>
+              <option value="wordlist">Wordlist 파일 업로드</option>
+              <option value="bruteforce">브루트포스</option>
+            </select>
+          </div>
+
+          <div class="mb-3" id="wlSection" style="display:none;">
+            <label class="form-label-sm">Wordlist 파일 (.txt)</label>
+            <input type="file" name="wordlist" class="form-control" accept=".txt">
+            <div class="form-hint">한 줄에 하나씩, 최대 50,000개</div>
+          </div>
+
+          <div id="bfSection" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label-sm">문자셋</label>
+              <select name="charset" class="form-select">
+                <option value="digits">숫자 (0-9)</option>
+                <option value="lower">소문자 (a-z)</option>
+                <option value="alphanum">숫자+소문자</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label-sm">최대 길이 (1-6자)</label>
+              <input type="number" name="bf_max_len" class="form-control" value="4" min="1" max="6">
+              <div class="form-hint text-warning small">길이가 길수록 시간이 오래 걸립니다</div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100 mt-2">
+            <i class="bi bi-unlock me-1"></i>암호 해제 시도
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      {% if error %}
+      <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+      <div class="tool-panel">
+        {% if result.status == 'no_password' %}
+        <div class="text-center py-4">
+          <i class="bi bi-unlock-fill" style="font-size:3rem; color:#4ade80;"></i>
+          <div class="fw-bold mt-2" style="color:#4ade80;">암호 없음</div>
+          <div class="text-dim small mt-1">{{ result.message }}</div>
+        </div>
+
+        {% elif result.status == 'found' %}
+        <div class="text-center py-4" style="border-bottom:1px solid var(--border);">
+          <i class="bi bi-unlock-fill" style="font-size:3rem; color:var(--accent);"></i>
+          <div class="fw-bold mt-2" style="color:var(--accent); font-size:1.1rem;">암호 발견!</div>
+          <div class="mt-3 p-3" style="background:var(--bg); border-radius:.5rem; border:1px solid var(--accent)44;">
+            <span class="text-dim small">발견된 암호:</span>
+            <div style="font-size:1.8rem; font-weight:700; font-family:monospace; color:#fff; letter-spacing:.1em;">
+              {{ result.password if result.password else '(빈 문자열)' }}
+            </div>
+            <button class="btn btn-sm btn-outline-secondary mt-2"
+                    onclick="navigator.clipboard.writeText('{{ result.password or '' }}')">
+              <i class="bi bi-clipboard me-1"></i>복사
+            </button>
+          </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-4" style="border-bottom:1px solid var(--border);">
+          <i class="bi bi-lock-fill" style="font-size:3rem; color:#ef4444;"></i>
+          <div class="fw-bold mt-2 text-danger">암호 해제 실패</div>
+          <div class="text-dim small mt-1">시도한 목록에서 암호를 찾지 못했습니다.</div>
+        </div>
+        {% endif %}
+
+        <!-- Stats -->
+        <div class="row g-2 mt-3 text-center">
+          <div class="col-4">
+            <div class="tool-panel p-3" style="background:var(--bg);">
+              <div style="font-size:1.3rem; font-weight:700; color:var(--accent);">{{ "{:,}".format(result.tried) }}</div>
+              <div class="text-dim small">시도 횟수</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="tool-panel p-3" style="background:var(--bg);">
+              <div style="font-size:1.3rem; font-weight:700; color:#a78bfa;">{{ result.file_count }}</div>
+              <div class="text-dim small">ZIP 내 파일</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="tool-panel p-3" style="background:var(--bg);">
+              <div style="font-size:1.3rem; font-weight:700; color:#f59e0b;">
+                {{ '✓' if result.status == 'found' else '✗' }}
+              </div>
+              <div class="text-dim small">결과</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File list -->
+        {% if result.files %}
+        <div class="mt-3">
+          <div class="text-dim small mb-2">ZIP 내 파일 목록 (최대 50개)</div>
+          <div style="max-height:180px; overflow-y:auto;">
+            {% for fname in result.files %}
+            <div class="small mb-1" style="font-family:monospace; color:var(--text-dim);">
+              <i class="bi bi-file-earmark me-1"></i>{{ fname }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if share_token %}
+        <div class="mt-3 pt-3 d-flex gap-2" style="border-top:1px solid var(--border);">
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유</button>
+          <a href="/tools/history" class="btn btn-sm btn-outline-secondary"><i class="bi bi-archive me-1"></i>이력</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-file-earmark-zip"></i>
+        <p>ZIP 파일을 업로드하고 공격 방식을 선택하면<br>암호 해제를 시도합니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleBF() {
+  const m = document.getElementById('modeSelect').value;
+  document.getElementById('wlSection').style.display = m === 'wordlist' ? '' : 'none';
+  document.getElementById('bfSection').style.display = m === 'bruteforce' ? '' : 'none';
+}
+</script>
+{% endblock %}

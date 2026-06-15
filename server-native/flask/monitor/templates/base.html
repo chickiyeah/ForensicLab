@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ForensicLab - 디지털 포렌식 분석 플랫폼</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/my.css') }}" rel="stylesheet" />
+  <script>
+    // FOUC 방지: <body> 그리기 전에 저장된 테마 적용
+    (function() {
+      try {
+        var t = localStorage.getItem('forensiclab_theme') || 'dark';
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body>
+{% include "navbar.html" %}
+
+<!-- 테마 토글 (우하단 floating) -->
+<button class="theme-toggle" id="themeToggle" title="화이트/다크 모드 전환" aria-label="테마 전환">
+  <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+</button>
+<script>
+(function() {
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const icon = document.getElementById('themeIcon');
+  function apply(theme) {
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light');
+      icon.className = 'bi bi-sun-fill';
+      btn.title = '다크 모드로 전환';
+    } else {
+      root.removeAttribute('data-theme');
+      icon.className = 'bi bi-moon-stars-fill';
+      btn.title = '라이트 모드로 전환';
+    }
+  }
+  // 초기 상태 반영
+  apply(localStorage.getItem('forensiclab_theme') || 'dark');
+  btn.addEventListener('click', () => {
+    const cur = localStorage.getItem('forensiclab_theme') || 'dark';
+    const next = cur === 'light' ? 'dark' : 'light';
+    localStorage.setItem('forensiclab_theme', next);
+    apply(next);
+  });
+})();
+</script>
+{% block content %}{% endblock %}
+
+{% if current_tool_help %}
+<!-- 인라인 도움말 (페이지 상단 자동 삽입) -->
+<script id="toolHelpData" type="application/json">
+{
+  "what":   {{ current_tool_help.what   | default('') | tojson }},
+  "how":    {{ current_tool_help.how    | default('') | tojson }},
+  "input":  {{ current_tool_help.input  | default('') | tojson }},
+  "output": {{ current_tool_help.output | default('') | tojson }},
+  "tips":   {{ current_tool_help.tips   | default('') | tojson }},
+  "name":   {{ current_tool_name | default('') | tojson }}
+}
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const h = JSON.parse(document.getElementById('toolHelpData').textContent);
+  const target = document.querySelector('.page-hero .container') || document.querySelector('.page-hero');
+  if (!target) return;
+  const box = document.createElement('div');
+  box.id = 'inlineToolHelp';
+  box.innerHTML = `
+    <div style="margin-top:1rem; padding:.85rem 1rem; background:rgba(0,212,255,.06);
+                border:1px solid rgba(0,212,255,.3); border-radius:.5rem;
+                font-size:.86rem; line-height:1.55;">
+      <div class="d-flex justify-content-between align-items-center mb-2" style="cursor:pointer;"
+           onclick="document.getElementById('helpBody').classList.toggle('d-none');
+                    this.querySelector('.toggle-icon').textContent =
+                      document.getElementById('helpBody').classList.contains('d-none') ? '▾' : '▴';">
+        <div><i class="bi bi-info-circle-fill text-accent me-2"></i>
+          <strong style="color:var(--accent);">사용 가이드</strong>
+          <span class="text-dim small ms-2">— 클릭하여 접기/펴기</span></div>
+        <span class="toggle-icon text-accent" style="font-size:1.1rem;">▴</span>
+      </div>
+      <div id="helpBody">
+        ${h.what  ? `<div class="mb-1"><strong class="text-accent">📌 무엇:</strong> ${h.what}</div>` : ''}
+        ${h.how   ? `<div class="mb-1"><strong class="text-accent">🛠 사용법:</strong> ${h.how}</div>` : ''}
+        ${h.input ? `<div class="mb-1"><strong class="text-accent">📥 입력:</strong> <code style="font-size:.78rem;">${h.input}</code></div>` : ''}
+        ${h.output? `<div class="mb-1"><strong class="text-accent">📤 출력:</strong> ${h.output}</div>` : ''}
+        ${h.tips  ? `<div class="mt-2 p-2" style="background:rgba(245,158,11,.08); border-left:3px solid #f59e0b; border-radius:.3rem;">
+                       <strong style="color:#f59e0b;">💡 팁:</strong> ${h.tips}</div>` : ''}
+      </div>
+    </div>`;
+  target.appendChild(box);
+});
+</script>
+{% endif %}
+
+{% if current_tool_paths %}
+<!-- 도구별 핵심 경로·정보 박스 (자동 삽입) -->
+<script id="toolPathData" type="application/json">{{ current_tool_paths | tojson }}</script>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const tp = JSON.parse(document.getElementById('toolPathData').textContent);
+  const target = document.querySelector('.page-hero .container') || document.querySelector('.page-hero');
+  if (!target || !tp) return;
+
+  const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const jsEsc = (s) => String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const isRegPage = location.pathname.indexOf('/tools/registry') === 0;
+
+  const copyBtn = (txt) => `<button class="btn btn-sm btn-outline-secondary" style="padding:.05rem .35rem; font-size:.68rem; margin-left:.3rem;"
+    onclick="navigator.clipboard.writeText('${jsEsc(txt)}'); this.innerHTML='<i class=&quot;bi bi-check2&quot;></i>'; setTimeout(()=>this.innerHTML='<i class=&quot;bi bi-clipboard&quot;></i>',1500);"
+    title="경로 복사"><i class="bi bi-clipboard"></i></button>`;
+  // 레지스트리 페이지면 "바로 이동" 버튼, 아니면 /tools/registry?path=...로 새 탭
+  const gotoBtn = (txt) => {
+    if (isRegPage) {
+      return `<button class="btn btn-sm btn-accent" style="padding:.05rem .35rem; font-size:.68rem; margin-left:.2rem;"
+        onclick="
+          const inp = document.getElementById('goPath');
+          if (inp) { inp.value = '${jsEsc(txt)}'; if (typeof gotoPath === 'function') gotoPath('${jsEsc(txt)}'); }
+          else { window.open('/tools/registry?path=' + encodeURIComponent('${jsEsc(txt)}'), '_blank'); }
+        " title="이 경로로 이동"><i class="bi bi-arrow-up-right"></i></button>`;
+    }
+    return `<a href="/tools/registry?path=${encodeURIComponent(txt)}" target="_blank" class="btn btn-sm btn-accent" style="padding:.05rem .35rem; font-size:.68rem; margin-left:.2rem;" title="레지스트리 도구에서 열기"><i class="bi bi-arrow-up-right"></i></a>`;
+  };
+
+  let html = '<div style="margin-top:1rem; padding:.85rem 1rem; background:rgba(245,158,11,.06); border:1px solid rgba(245,158,11,.3); border-radius:.5rem; font-size:.86rem; line-height:1.55;">';
+  html += '<div class="d-flex justify-content-between align-items-center mb-2" style="cursor:pointer;" onclick="document.getElementById(\'pathBody\').classList.toggle(\'d-none\'); this.querySelector(\'.tp-toggle\').textContent = document.getElementById(\'pathBody\').classList.contains(\'d-none\') ? \'▾\' : \'▴\';">';
+  html += `<div><i class="bi ${tp.icon||'bi-signpost-2-fill'} me-2" style="color:#f59e0b;"></i><strong style="color:#f59e0b;">${esc(tp.title||'핵심 경로·정보')}</strong> <span class="text-dim small ms-2">— 클릭하여 펴기/접기</span></div>`;
+  html += '<span class="tp-toggle text-warning" style="font-size:1.1rem;">▾</span>';
+  html += '</div>';
+  html += '<div id="pathBody" class="d-none">';
+
+  // 단순 files 리스트
+  if (tp.files && tp.files.length) {
+    html += '<div class="mb-2"><strong class="text-accent">📁 파일 경로:</strong></div>';
+    tp.files.forEach(f => {
+      html += `<div class="mb-1 d-flex align-items-start gap-1"><code style="font-size:.74rem; word-break:break-all; flex:1;">${esc(f)}</code>${copyBtn(f)}</div>`;
+    });
+  }
+
+  // sections (그룹별 경로)
+  if (tp.sections && tp.sections.length) {
+    tp.sections.forEach(sec => {
+      html += `<div class="mt-2 mb-1"><strong style="color:var(--accent);">${esc(sec.name)}</strong></div>`;
+      sec.paths.forEach(p => {
+        const [hive, path, desc] = p;
+        const isRegHive = ['SAM','SECURITY','SYSTEM','SOFTWARE','NTUSER.DAT','UsrClass.dat','Amcache.hve'].includes(hive);
+        html += `<div class="mb-1 p-1" style="background:var(--bg); border-radius:.3rem; font-size:.78rem;">
+          <span class="tag" style="background:rgba(245,158,11,.15); color:#f59e0b; font-size:.64rem; margin-right:.3rem;">${esc(hive)}</span>
+          <code style="font-size:.74rem; color:var(--accent); word-break:break-all;">${esc(path)}</code>
+          ${copyBtn(path)}${isRegHive ? gotoBtn(path) : ''}
+          <div class="text-dim small" style="font-size:.72rem; margin-top:.1rem; margin-left:.5rem;">${esc(desc)}</div>
+        </div>`;
+      });
+    });
+  }
+
+  // event_ids (EVTX 도구)
+  if (tp.event_ids && tp.event_ids.length) {
+    html += '<div class="mt-2 mb-1"><strong style="color:var(--accent);">📋 핵심 이벤트 ID:</strong></div>';
+    html += '<div style="max-height:300px; overflow-y:auto;">';
+    tp.event_ids.forEach(([ch, eid, desc]) => {
+      html += `<div class="mb-1 small"><span class="tag" style="background:rgba(0,212,255,.15);color:#00d4ff; font-size:.64rem;">${esc(ch)}</span> <code style="color:#f59e0b;">${esc(eid)}</code> <span class="text-dim">${esc(desc)}</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  // notes
+  if (tp.notes && tp.notes.length) {
+    html += '<div class="mt-2 mb-1"><strong style="color:var(--accent);">📝 분석 포인트:</strong></div><ul class="mb-0" style="font-size:.8rem; padding-left:1.2rem;">';
+    tp.notes.forEach(n => { html += `<li class="mb-1">${esc(n)}</li>`; });
+    html += '</ul>';
+  }
+
+  // suspicious_keywords / suspicious_apis
+  const suspList = tp.suspicious_keywords || tp.suspicious_apis;
+  if (suspList && suspList.length) {
+    html += '<div class="mt-2 mb-1"><strong class="text-danger">⚠️ 의심 키워드/API:</strong></div><div class="d-flex flex-wrap gap-1">';
+    suspList.forEach(k => { html += `<code style="font-size:.72rem; background:rgba(239,68,68,.1); color:#fca5a5; padding:.1rem .35rem; border-radius:.25rem;">${esc(k)}</code>`; });
+    html += '</div>';
+  }
+
+  // related_paths (추가 관련)
+  if (tp.related_paths && tp.related_paths.length) {
+    html += '<div class="mt-2 mb-1"><strong class="text-accent">🔗 관련 경로:</strong></div>';
+    tp.related_paths.forEach(([hive, path, desc]) => {
+      html += `<div class="mb-1 small"><span class="tag" style="font-size:.64rem;">${esc(hive)}</span> <code style="font-size:.72rem;">${esc(path)}</code> <span class="text-dim">— ${esc(desc)}</span></div>`;
+    });
+  }
+
+  html += '<div class="mt-2 pt-2 small text-dim" style="border-top:1px solid var(--border);">📚 전체 경로: <a href="/tools/forensic-paths" class="text-accent">/tools/forensic-paths</a></div>';
+  html += '</div></div>';
+
+  const box = document.createElement('div');
+  box.innerHTML = html;
+  target.appendChild(box);
+});
+</script>
+{% endif %}
+
+{% if current_tool_help %}
+<!-- 자동 도움말 사이드 패널 (모든 도구 페이지에 자동) -->
+<div id="toolHelpFab" style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:9998;">
+  <button onclick="document.getElementById('toolHelpPanel').classList.toggle('open')"
+          class="btn btn-accent shadow"
+          style="border-radius:50%; width:48px; height:48px; padding:0; font-size:1.4rem;"
+          title="이 도구 사용법 보기">
+    <i class="bi bi-question-lg"></i>
+  </button>
+</div>
+
+<div id="toolHelpPanel" style="position:fixed; bottom:5rem; right:1.5rem; z-index:9997;
+                                width:380px; max-width:calc(100vw - 2rem); max-height:70vh;
+                                background:var(--bg-card); border:1px solid var(--accent);
+                                border-radius:.6rem; padding:1rem; overflow-y:auto;
+                                box-shadow:0 8px 32px rgba(0,0,0,.4);
+                                transform:translateY(20px); opacity:0; pointer-events:none;
+                                transition:all .2s;">
+  <style>#toolHelpPanel.open { transform:translateY(0); opacity:1; pointer-events:auto; }</style>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="panel-title mb-0"><i class="bi bi-question-circle text-accent me-2"></i>
+      {{ current_tool_name }} 도움말</h6>
+    <button onclick="document.getElementById('toolHelpPanel').classList.remove('open')"
+            class="btn btn-sm btn-outline-secondary" style="padding:.1rem .4rem;">✕</button>
+  </div>
+  <div style="font-size:.84rem; line-height:1.55;">
+    <div class="mb-2"><strong class="text-accent">📌 무엇:</strong><br>{{ current_tool_help.what }}</div>
+    <div class="mb-2"><strong class="text-accent">🛠 사용법:</strong><br>{{ current_tool_help.how }}</div>
+    {% if current_tool_help.input %}
+    <div class="mb-2"><strong class="text-accent">📥 입력:</strong> <code style="font-size:.78rem;">{{ current_tool_help.input }}</code></div>
+    {% endif %}
+    {% if current_tool_help.output %}
+    <div class="mb-2"><strong class="text-accent">📤 출력:</strong> {{ current_tool_help.output }}</div>
+    {% endif %}
+    {% if current_tool_help.tips %}
+    <div class="p-2" style="background:rgba(245,158,11,.08); border-left:3px solid #f59e0b; border-radius:.3rem; font-size:.8rem;">
+      <strong style="color:#f59e0b;">💡 팁:</strong> {{ current_tool_help.tips }}</div>
+    {% endif %}
+    <div class="mt-2 pt-2 text-end" style="border-top:1px solid var(--border);">
+      <a href="/tools/help" class="text-dim small">전체 도움말 →</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+
+<!-- 글로벌 폼 제출 오버레이 + 버튼 비활성화 -->
+<script>
+(function() {
+  // 오버레이 DOM
+  const overlay = document.createElement('div');
+  overlay.id = 'globalLoadingOverlay';
+  overlay.style.cssText = `
+    position:fixed; inset:0; z-index:99999;
+    background:rgba(0,0,0,.72); backdrop-filter:blur(4px);
+    display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:1rem;
+    transition:opacity .2s;`;
+  overlay.innerHTML = `
+    <div class="spinner-border" style="width:5rem; height:5rem; color:var(--accent); border-width:.4rem;"></div>
+    <h4 style="color:#fff; margin-top:1rem; font-weight:700;" id="ovTitle">분석 진행 중...</h4>
+    <div style="color:#94a3b8; font-size:.88rem;" id="ovMsg">파일을 처리하고 있습니다. 잠시만 기다려주세요.</div>
+    <div style="background:rgba(255,255,255,.08); padding:.6rem 1.2rem; border-radius:.4rem; color:#cbd5e1; font-family:monospace; font-size:.84rem;">
+      <i class="bi bi-clock me-1"></i><span id="ovElapsed">0초</span> 경과
+    </div>
+    <div id="ovProgress" style="display:none; width:300px; background:rgba(255,255,255,.1); height:8px; border-radius:4px; overflow:hidden;">
+      <div id="ovProgressBar" style="height:100%; width:0%; background:var(--accent); transition:width .3s;"></div>
+    </div>
+    <div style="color:#64748b; font-size:.74rem; margin-top:.5rem;">
+      대용량 파일은 시간이 걸릴 수 있습니다. 페이지를 닫지 마세요.
+    </div>
+    <button onclick="document.getElementById('globalLoadingOverlay').style.display='none';"
+            class="btn btn-sm btn-outline-secondary mt-2"
+            style="opacity:.5; font-size:.72rem;">강제 닫기 (취소 안됨)</button>
+  `;
+  document.body.appendChild(overlay);
+
+  let elapsedTimer = null;
+  function showOverlay(opts) {
+    opts = opts || {};
+    document.getElementById('ovTitle').textContent = opts.title || '분석 진행 중...';
+    document.getElementById('ovMsg').textContent = opts.msg || '파일을 처리하고 있습니다. 잠시만 기다려주세요.';
+    const prog = document.getElementById('ovProgress');
+    prog.style.display = opts.progress ? '' : 'none';
+    if (opts.progress) document.getElementById('ovProgressBar').style.width = opts.progress + '%';
+    overlay.style.display = 'flex';
+    const start = Date.now();
+    if (elapsedTimer) clearInterval(elapsedTimer);
+    document.getElementById('ovElapsed').textContent = '0초';
+    elapsedTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - start) / 1000);
+      const m = Math.floor(s / 60), ss = s % 60;
+      document.getElementById('ovElapsed').textContent =
+        m > 0 ? `${m}분 ${ss}초` : `${s}초`;
+    }, 500);
+  }
+  window.showLoadingOverlay = showOverlay;
+  window.hideLoadingOverlay = () => {
+    overlay.style.display = 'none';
+    if (elapsedTimer) clearInterval(elapsedTimer);
+  };
+
+  // 모든 폼 제출 시 자동 오버레이 (GET 폼 제외, data-no-overlay 옵션)
+  document.addEventListener('submit', e => {
+    const form = e.target;
+    if (!form || form.tagName !== 'FORM') return;
+    if (form.method && form.method.toLowerCase() === 'get') return;
+    if (form.dataset.noOverlay === 'true') return;
+    if (form.querySelector('input[name=q]') && !form.querySelector('input[type=file]')) return; // 검색박스만 있는 폼 제외
+
+    // 버튼 비활성화 + 텍스트 변경
+    const btns = form.querySelectorAll('button[type=submit], button:not([type=button])');
+    btns.forEach(btn => {
+      if (btn.disabled) return;
+      btn.dataset.originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="width:1rem; height:1rem;"></span>처리 중...';
+    });
+
+    // 파일 크기 확인 → 큰 파일은 오래 걸린다고 표시
+    const fileInput = form.querySelector('input[type=file]');
+    let totalSize = 0;
+    if (fileInput && fileInput.files) {
+      for (const f of fileInput.files) totalSize += f.size;
+    }
+    const sizeMB = (totalSize / 1024 / 1024).toFixed(1);
+    showOverlay({
+      title: '분석 진행 중...',
+      msg: totalSize > 0
+        ? `${sizeMB} MB 파일 처리 중 — 크기에 따라 수초~수분 소요됩니다`
+        : '데이터 처리 중...',
+    });
+
+    // bfcache 복귀 시 오버레이 자동 해제
+    window.addEventListener('pageshow', e => {
+      if (e.persisted) {
+        hideLoadingOverlay();
+        btns.forEach(btn => {
+          if (btn.dataset.originalHTML) {
+            btn.innerHTML = btn.dataset.originalHTML;
+            btn.disabled = false;
+          }
+        });
+      }
+    });
+  }, true);
+
+  // 백그라운드 작업 페이지(/tools/jobs/<id>)에서는 진행률 자동 폴링
+  const m = location.pathname.match(/^\/tools\/jobs\/([a-f0-9]+)$/);
+  if (m) {
+    const jobId = m[1];
+    // 진행률 폴링은 페이지 자체 자동 새로고침 사용 — 여기서는 추가 안 함
+  }
+})();
+</script>
+</body>
+</html>

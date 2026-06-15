@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Plaso 슈퍼 타임라인</span></div>
+<h1 class="page-title"><i class="bi bi-stack me-2 text-accent"></i>Plaso 슈퍼 타임라인</h1>
+<p class="page-sub">log2timeline + psort 통합 — 디스크 이미지·아티팩트에서 수천~수만 이벤트 자동 추출 (514개 구성요소: 파서 58 · 플러그인 182 · 포매터 274)</p></div></div>
+
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+
+<div class="alert mb-3" style="background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.3); border-radius:.5rem; padding:.85rem 1rem;">
+<i class="bi bi-check-circle-fill me-2" style="color:#22c55e;"></i>
+<strong style="color:#22c55e;">plaso 20260512 작동 중 · 514개 구성요소(파서 58·플러그인 182·포매터 274) · 아티팩트 정의 731</strong>
+<div class="text-dim small mt-1">EVTX·Prefetch·Registry·MFT·USN·SQLite·LNK·JumpList·PE 등 거의 모든 포렌식 아티팩트 자동 추출 후 통합 타임라인 생성</div>
+</div>
+
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<div class="form-hint mb-3">디스크 이미지 (.dd/.E01) · 단일 아티팩트 (.evtx/.pf/$MFT 등) → Plaso 슈퍼 타임라인</div>
+<button class="btn btn-accent w-100"><i class="bi bi-stack me-1"></i>백그라운드 실행</button>
+</form>
+<div class="text-dim small mt-2"><i class="bi bi-info-circle me-1"></i>대용량 디스크 이미지는 시간이 오래 걸립니다. 백그라운드 작업 큐로 처리되며 <a href="/tools/jobs" class="text-accent">/tools/jobs</a>에서 진행 상황 확인 가능.</div>
+</div></div></div>
+{% else %}<div class="alert alert-success">백그라운드 작업: <a href="{{ result.redirect }}">{{ result.job_id }}</a></div>
+<script>setTimeout(()=>location.href='{{ result.redirect }}', 1500);</script>{% endif %}
+</div>{% endblock %}

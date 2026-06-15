@@ -1,0 +1,36 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">SPF / DKIM / DMARC</span></div>
+<h1 class="page-title"><i class="bi bi-envelope-check-fill me-2 text-accent"></i>SPF / DKIM / DMARC</h1>
+<p class="page-sub">도메인 DNS 조회 + 이메일 헤더 분석으로 메일 인증 정책과 검증 결과를 확인합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel">
+<form method="POST">
+<label class="form-label-sm">도메인</label>
+<input type="text" name="domain" class="form-control mb-3" placeholder="example.com">
+<label class="form-label-sm">또는 이메일 헤더 붙여넣기</label>
+<textarea name="headers" class="form-control mb-3" rows="10" style="font-family:monospace; font-size:.72rem;" placeholder="Authentication-Results: ...
+Received: from ..."></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-shield-check me-1"></i>분석</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}
+{% if result.spf %}<div class="tool-panel mb-2" style="border-left:3px solid var(--accent);">
+<strong>SPF</strong><div style="font-family:monospace; font-size:.78rem; margin-top:.3rem; word-break:break-all;">{{ result.spf }}</div></div>{% endif %}
+{% if result.dmarc %}<div class="tool-panel mb-2" style="border-left:3px solid #a78bfa;">
+<strong>DMARC</strong><div style="font-family:monospace; font-size:.78rem; margin-top:.3rem; word-break:break-all;">{{ result.dmarc }}</div></div>{% endif %}
+{% if result.mx %}<div class="tool-panel mb-2"><strong>MX 레코드</strong>
+{% for m in result.mx %}<div style="font-family:monospace; font-size:.78rem;">{{ m }}</div>{% endfor %}</div>{% endif %}
+{% if result.auth_results %}<div class="tool-panel mb-2"><strong>Authentication-Results</strong>
+<div class="d-flex gap-2 my-2">
+<span class="tag" style="background:{% if result.spf_pass %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">SPF {% if result.spf_pass %}PASS{% else %}FAIL{% endif %}</span>
+<span class="tag" style="background:{% if result.dkim_pass %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">DKIM {% if result.dkim_pass %}PASS{% else %}FAIL{% endif %}</span>
+<span class="tag" style="background:{% if result.dmarc_pass %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">DMARC {% if result.dmarc_pass %}PASS{% else %}FAIL{% endif %}</span>
+</div>
+<pre style="background:var(--bg); padding:.5rem; border-radius:.35rem; font-size:.72rem; margin:0;">{{ result.auth_results }}</pre>
+</div>{% endif %}
+{% if result.hop_ips %}<div class="tool-panel"><strong>경유 IP</strong>
+{% for ip in result.hop_ips %}<code class="d-block">{{ ip }}</code>{% endfor %}</div>{% endif %}
+{% endif %}
+</div></div></div>{% endblock %}

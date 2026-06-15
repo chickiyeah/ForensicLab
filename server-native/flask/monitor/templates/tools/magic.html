@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">MIME 시그니처 DB</span></div>
+<h1 class="page-title"><i class="bi bi-tag-fill me-2 text-accent"></i>MIME 시그니처 DB</h1>
+<p class="page-sub">100+ 매직바이트 매칭.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form></div></div></div>
+{% else %}<div class="text-dim small mb-2">DB: {{ result.db_size }}개</div>
+{% for r in result.files %}<div class="tool-panel mb-2">
+<h6 class="panel-title">{{ r.filename }}</h6>
+{% if r.matches %}{% for m in r.matches %}<div class="p-2 mb-1" style="background:var(--bg); border-left:3px solid var(--accent);">
+<code>{{ m.sig }}</code> <strong>{{ m.label }}</strong> <span class="text-dim small">{{ m.mime }}</span>
+</div>{% endfor %}{% else %}<div class="text-dim">매칭 없음</div>{% endif %}
+<div class="mt-2 text-dim small">헥스: <code style="font-size:.7rem; word-break:break-all;">{{ r.hex_preview }}</code></div>
+</div>{% endfor %}
+{% endif %}</div>{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">HMAC / RSA / ECDSA 서명</span></div>
+<h1 class="page-title"><i class="bi bi-pen-fill me-2 text-accent"></i>HMAC / RSA / ECDSA 서명</h1>
+<p class="page-sub">데이터 + 키 + 서명 → 검증, 또는 HMAC 계산.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel"><form method="POST">
+<label class="form-label-sm">알고리즘</label>
+<select name="algo" class="form-select mb-2">
+<option value="hmac">HMAC</option><option value="rsa">RSA</option>
+<option value="ecdsa">ECDSA</option><option value="ed25519">Ed25519</option></select>
+<label class="form-label-sm">HMAC 해시 (HMAC 사용 시)</label>
+<select name="hash" class="form-select mb-2">
+<option>sha256</option><option>sha1</option><option>sha512</option><option>md5</option></select>
+<label class="form-label-sm">데이터</label>
+<textarea name="data" class="form-control mb-2" rows="3"></textarea>
+<label class="form-label-sm">키 (HMAC: 시크릿 / RSA·ECDSA: PEM 공개키)</label>
+<textarea name="key" class="form-control mb-2" rows="6" style="font-family:monospace; font-size:.7rem;"></textarea>
+<label class="form-label-sm">서명 (검증 시, Base64 또는 hex)</label>
+<input type="text" name="signature" class="form-control mb-2" style="font-family:monospace; font-size:.7rem;">
+<select name="action" class="form-select mb-3">
+<option value="verify">검증</option><option value="compute">HMAC 계산</option></select>
+<button class="btn btn-accent w-100"><i class="bi bi-pen me-1"></i>실행</button>
+</form></div>
+{% if result %}<div class="tool-panel mt-3" style="border-left:3px solid {% if result.valid %}#22c55e{% else %}#ef4444{% endif %};">
+<h6 class="panel-title">{{ result.algo }}</h6>
+{% if result.computed %}<div><strong>계산:</strong> <code style="font-size:.7rem; word-break:break-all;">{{ result.computed }}</code></div>{% endif %}
+{% if result.valid is defined %}<div class="mt-2"><strong>검증 결과:</strong>
+{% if result.valid %}<span class="text-success">✓ 유효</span>{% else %}<span class="text-danger">✗ 불일치</span>{% endif %}
+{% if result.reason %} <span class="text-dim small">({{ result.reason }})</span>{% endif %}</div>{% endif %}
+</div>{% endif %}
+</div></div></div>{% endblock %}

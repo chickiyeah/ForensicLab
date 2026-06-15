@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">CIDR 계산기</span></div>
+<h1 class="page-title"><i class="bi bi-diagram-3 me-2 text-accent"></i>CIDR 계산기</h1>
+<p class="page-sub">서브넷 범위·호스트 수·사설/공용 IP 분류.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel mb-3"><form method="POST">
+<input type="text" name="cidr" class="form-control mb-3" placeholder="192.168.1.0/24" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-diagram-3 me-1"></i>계산</button>
+</form></div>
+{% if result %}<div class="tool-panel"><table class="table table-sm" style="font-size:.86rem;">
+<tr><td class="text-dim">입력</td><td><code>{{ result.input }}</code></td></tr>
+<tr><td class="text-dim">네트워크</td><td><code>{{ result.network }}</code></td></tr>
+<tr><td class="text-dim">서브넷마스크</td><td><code>{{ result.netmask }}</code></td></tr>
+{% if result.broadcast %}<tr><td class="text-dim">브로드캐스트</td><td><code>{{ result.broadcast }}</code></td></tr>{% endif %}
+{% if result.first %}<tr><td class="text-dim">첫 호스트</td><td><code>{{ result.first }}</code></td></tr>{% endif %}
+{% if result.last %}<tr><td class="text-dim">마지막 호스트</td><td><code>{{ result.last }}</code></td></tr>{% endif %}
+<tr><td class="text-dim">총 주소</td><td><strong>{{ "{:,}".format(result.total) }}</strong></td></tr>
+<tr><td class="text-dim">사용 가능</td><td><strong>{{ "{:,}".format(result.usable) }}</strong></td></tr>
+<tr><td class="text-dim">버전</td><td>IPv{{ result.version }}</td></tr>
+<tr><td class="text-dim">분류</td><td>
+{% if result.is_private %}<span class="tag" style="background:rgba(245,158,11,.15);color:#f59e0b">사설</span>{% endif %}
+{% if result.is_global %}<span class="tag" style="background:rgba(34,197,94,.15);color:#22c55e">공용</span>{% endif %}
+{% if result.is_loopback %}<span class="tag">루프백</span>{% endif %}
+{% if result.is_multicast %}<span class="tag">멀티캐스트</span>{% endif %}
+</td></tr>
+{% if result.sample_hosts %}<tr><td class="text-dim">샘플</td><td>
+{% for h in result.sample_hosts %}<code class="me-2">{{ h }}</code>{% endfor %}</td></tr>{% endif %}
+</table></div>{% endif %}
+</div></div></div>{% endblock %}

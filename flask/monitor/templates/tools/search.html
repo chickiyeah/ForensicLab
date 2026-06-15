@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">전체 검색</span></div>
+<h1 class="page-title"><i class="bi bi-search me-2 text-accent"></i>전체 검색</h1>
+<p class="page-sub">사건·증거·발견·도구·OCR 통합 검색</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-10"><div class="tool-panel mb-3">
+<form method="POST"><div class="d-flex gap-2">
+<input type="text" name="q" class="form-control" value="{{ q }}" placeholder="검색어 입력..." autofocus>
+<button class="btn btn-accent"><i class="bi bi-search me-1"></i>검색</button>
+</div></form></div>
+
+{% if q %}
+{% if cases %}<div class="tool-panel mb-2"><h6 class="panel-title">사건 ({{ cases|length }})</h6>
+{% for c in cases %}<div class="d-flex gap-2 p-1" style="border-bottom:1px solid var(--border);">
+<a href="/tools/case/{{ c.id }}"><code>{{ c.case_number }}</code></a>
+<span>{{ c.name }}</span></div>{% endfor %}</div>{% endif %}
+
+{% if findings %}<div class="tool-panel mb-2"><h6 class="panel-title">발견사항 ({{ findings|length }})</h6>
+{% for f in findings %}<div class="d-flex gap-2 p-1" style="border-bottom:1px solid var(--border);">
+<a href="/tools/case/{{ f.case_id }}">{{ f.title }}</a>
+<span class="tag">{{ f.severity }}</span></div>{% endfor %}</div>{% endif %}
+
+{% if results %}<div class="tool-panel"><h6 class="panel-title">증거·노트 ({{ results|length }})</h6>
+{% for r in results %}<div class="p-2 mb-1" style="background:var(--bg); border-radius:.3rem;">
+<div><code>{{ r.case_number }}</code> <strong>{{ r.evidence_filename }}</strong></div>
+<div class="small mt-1">{{ r.snip | safe }}</div>
+{% if r.tags %}<div class="mt-1">{% for t in r.tags.split(',') %}<span class="tag me-1">{{ t.strip() }}</span>{% endfor %}</div>{% endif %}
+</div>{% endfor %}</div>{% endif %}
+
+{% if not cases and not findings and not results %}<div class="text-dim text-center p-4">결과 없음</div>{% endif %}
+{% endif %}
+</div></div></div>{% endblock %}

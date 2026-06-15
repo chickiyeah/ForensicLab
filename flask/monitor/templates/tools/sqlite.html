@@ -1,0 +1,47 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">SQLite 브라우저</span></div>
+<h1 class="page-title"><i class="bi bi-database me-2 text-accent"></i>SQLite 데이터베이스 브라우저</h1>
+<p class="page-sub">Chrome History·Firefox places·iOS Manifest.db·WhatsApp msgstore.db·KnowledgeC.db 등 SQLite를 업로드해 테이블·SELECT 쿼리 실행.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-upload me-2"></i>SQLite 파일 업로드</h6>
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" accept=".db,.sqlite,.sqlite3" required>
+<input type="hidden" name="action" value="list">
+<button class="btn btn-accent w-100"><i class="bi bi-list me-1"></i>테이블 보기</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 align-items-center mb-3 flex-wrap"><strong>{{ result.filename }}</strong><span class="text-dim small">{{ "{:,}".format(result.file_size) }} B · {{ result.tables|length }}개 테이블</span><a href="/tools/sqlite" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+<div class="row g-3"><div class="col-lg-4"><div class="tool-panel">
+<h6 class="panel-title">테이블 ({{ result.tables|length }})</h6>
+<div style="max-height:500px; overflow-y:auto;">{% for t in result.tables %}
+<div class="p-2 mb-1" style="background:var(--bg); border-radius:.35rem; font-size:.8rem;">
+<div class="d-flex justify-content-between"><strong style="color:var(--accent)">{{ t.name }}</strong><span class="text-dim small">{{ t.rows }}행</span></div>
+<div class="text-dim" style="font-size:.7rem; word-break:break-word; margin-top:.15rem;">{{ t.cols|join(', ') }}</div>
+<button class="btn btn-sm btn-outline-secondary mt-1" style="font-size:.7rem; padding:.1rem .4rem;" onclick="document.querySelector('[name=sql]').value='SELECT * FROM \"{{ t.name }}\" LIMIT 100'">쿼리 채우기</button>
+</div>{% endfor %}</div>
+</div></div>
+<div class="col-lg-8"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-code-slash me-2"></i>SELECT 쿼리</h6>
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-2" required>
+<input type="hidden" name="action" value="query">
+<textarea name="sql" class="form-control mb-2" rows="3" style="font-family:monospace; font-size:.8rem;" placeholder="SELECT * FROM ... LIMIT 100">{{ result.sql or '' }}</textarea>
+<button class="btn btn-accent btn-sm"><i class="bi bi-play me-1"></i>실행</button>
+<span class="text-dim small ms-2">읽기 전용 (SELECT / PRAGMA / WITH)</span>
+</form>
+{% if result.rows is not none %}
+<div class="mt-3" style="max-height:500px; overflow:auto;">
+<table class="table table-sm" style="font-size:.78rem;"><thead><tr class="text-dim">
+{% for h in result.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead><tbody>
+{% for row in result.rows %}<tr>{% for c in row %}<td style="max-width:300px; overflow:hidden; text-overflow:ellipsis;">{{ c }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table><div class="text-dim small mt-2">{{ result.rows|length }}행</div>
+</div>
+{% endif %}
+</div></div></div>
+{% endif %}
+</div>{% endblock %}

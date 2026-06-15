@@ -1,4 +1,4 @@
-"""
+﻿"""
 ForensicLab 확장 도구 세트 2
 ============================
 20개 신규 분석 도구를 한 모듈에 정의.
@@ -42,7 +42,7 @@ from pathlib import Path
 
 from flask import request, render_template, jsonify
 
-from hospital.views.tools import bp, _save_log
+from monitor.views.tools import bp, _save_log
 
 
 # ============================================================

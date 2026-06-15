@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Sigma 규칙 매처</span></div>
+<h1 class="page-title"><i class="bi bi-search-heart me-2 text-accent"></i>Sigma 규칙 매처</h1>
+<p class="page-sub">Sigma YAML → JSON 이벤트 매칭.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-6"><div class="tool-panel"><form method="POST">
+<label class="form-label-sm">Sigma 규칙 (YAML)</label>
+<textarea name="sigma" class="form-control mb-3" rows="12" style="font-family:monospace; font-size:.74rem;" placeholder="title: Suspicious PowerShell&#10;level: high&#10;detection:&#10;    selection:&#10;        EventID: 4688&#10;        CommandLine: powershell&#10;    condition: selection"></textarea>
+<label class="form-label-sm">JSON 이벤트 배열</label>
+<textarea name="events" class="form-control mb-3" rows="6" style="font-family:monospace; font-size:.74rem;"></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-play me-1"></i>매칭</button></form></div></div>
+<div class="col-lg-6">{% if result %}{% for m in result.matches %}
+<div class="tool-panel mb-2">
+<h6 class="panel-title">{{ m.rule }} <span class="tag ms-2">{{ m.level }}</span></h6>
+<p class="text-dim small">{{ m.description }}</p>
+<strong>{{ m.match_count }}건 매칭</strong>
+{% for item in m.matches[:30] %}<pre style="background:var(--bg); padding:.4rem; font-size:.72rem; margin-top:.3rem;">{{ item.event | tojson(indent=2) }}</pre>{% endfor %}
+</div>{% endfor %}{% endif %}</div></div></div>{% endblock %}

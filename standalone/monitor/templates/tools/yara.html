@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">YARA-lite 스캐너</span></div>
+<h1 class="page-title"><i class="bi bi-search me-2 text-accent"></i>YARA-lite 스캐너</h1>
+<p class="page-sub">간소화된 YARA 규칙(문자열·헥스 패턴)으로 파일을 스캔하여 매칭 위치를 표시합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-code-square me-2"></i>YARA 규칙</h6>
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-2" required>
+<textarea name="rules" class="form-control mb-2" rows="14" style="font-family:monospace; font-size:.74rem;" placeholder='rule Mimikatz {
+  strings:
+    $a = "mimikatz"
+    $b = "sekurlsa"
+    $c = { 4D 5A 90 00 }
+  condition:
+    any of them
+}'>{{ rules }}</textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>스캔</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}
+<div class="tool-panel"><h6 class="panel-title">{{ result.filename }} — {{ result.matches|length }}개 규칙 매칭 ({{ result.match_count }}건)</h6>
+{% for m in result.matches %}
+<div class="mb-2 p-2" style="background:var(--bg); border-radius:.35rem; border-left:3px solid var(--accent);">
+<strong style="color:var(--accent)">rule {{ m.rule }}</strong>
+{% for h in m.hits %}<div class="ms-3 mt-1" style="font-size:.78rem;">
+<code>${{ h.var }} ({{ h.type }})</code> = <code style="color:#f59e0b">{{ h.pattern }}</code>
+<div class="text-dim small">오프셋: {{ h.offsets|join(', ') }}</div></div>{% endfor %}
+</div>{% endfor %}
+{% if not result.matches %}<div class="text-dim">매칭 없음</div>{% endif %}
+</div>{% endif %}
+</div></div></div>{% endblock %}

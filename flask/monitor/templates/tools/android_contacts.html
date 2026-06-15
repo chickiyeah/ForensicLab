@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Android 연락처</span></div>
+<h1 class="page-title"><i class="bi bi-person-rolodex me-2 text-accent"></i>Android 연락처</h1>
+<p class="page-sub">contacts2.db</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<div class="form-hint mb-3">/data/data/com.android.providers.contacts/databases/contacts2.db</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}<div class="d-flex gap-3 mb-3"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ "{:,}".format(result.size) }} B</span></div>
+{% if result.tables %}<div class="tool-panel mb-3"><h6 class="panel-title">테이블 ({{ result.tables|length }})</h6>
+{% for t in result.tables[:30] %}<span class="tag me-1 mb-1 d-inline-block">{{ t.name }} ({{ t.rows }})</span>{% endfor %}
+</div>{% endif %}
+{% if result.contacts %}<div class="tool-panel"><h6 class="panel-title">데이터 ({{ result.contacts|length }})</h6>
+<div style="max-height:600px; overflow-y:auto;"><table class="table table-sm" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>ID</th><th>NAME</th><th>LAST_CONTACT</th><th>TIMES</th><th>STARRED</th></tr></thead>
+<tbody>{% for item in result.contacts %}<tr><td>{{ item.id }}</td><td>{{ item.name }}</td><td>{{ item.last_contact }}</td><td>{{ item.times }}</td><td>{{ item.starred }}</td></tr>{% endfor %}
+</tbody></table></div></div>{% endif %}
+{% endif %}</div>{% endblock %}

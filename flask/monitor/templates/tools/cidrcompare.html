@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">CIDR 다중 비교</span></div>
+<h1 class="page-title"><i class="bi bi-diagram-3 me-2 text-accent"></i>CIDR 다중 비교</h1>
+<p class="page-sub">여러 IP가 어떤 CIDR에 속하는지 확인</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST">
+<label class="form-label-sm">CIDR 목록 (줄바꿈)</label>
+<textarea name="cidrs" class="form-control mb-2" rows="6" style="font-family:monospace; font-size:.74rem;" placeholder="192.168.1.0/24
+10.0.0.0/8"></textarea>
+<label class="form-label-sm">IP 목록</label>
+<textarea name="ips" class="form-control mb-3" rows="8" style="font-family:monospace; font-size:.74rem;"></textarea>
+<button class="btn btn-accent w-100">확인</button></form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">결과</h6>
+<table class="table table-sm" style="font-size:.82rem;"><thead><tr class="text-dim"><th>IP</th><th>매칭 CIDR</th></tr></thead><tbody>
+{% for r in result.ips %}<tr><td><code>{{ r.ip }}</code></td>
+<td>{% if r.matches %}{% for m in r.matches %}<code class="me-1">{{ m }}</code>{% endfor %}
+{% elif r.error %}<span class="text-danger">{{ r.error }}</span>
+{% else %}<span class="text-dim">매칭 없음</span>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}</div></div></div>{% endblock %}

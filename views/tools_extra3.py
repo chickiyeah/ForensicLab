@@ -1,4 +1,4 @@
-"""ForensicLab 확장 도구 세트 3 — 30개 추가 도구"""
+﻿"""ForensicLab 확장 도구 세트 3 — 30개 추가 도구"""
 import base64
 import datetime as _dt
 import io
@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from flask import request, render_template, jsonify
-from hospital.views.tools import bp, _save_log
+from monitor.views.tools import bp, _save_log
 
 
 # ============================================================

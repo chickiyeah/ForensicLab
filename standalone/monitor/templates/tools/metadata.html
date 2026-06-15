@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">메타데이터 추출</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-file-earmark-text me-2 text-accent"></i>메타데이터 추출</h1>
+    <p class="page-sub">이미지·PDF·바이너리 파일에서 모든 메타데이터를 추출하여 분석합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+
+    <!-- Left -->
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">분석할 파일</label>
+            <input type="file" name="file" multiple class="form-control" required>
+            <div class="form-hint">이미지(JPEG·PNG·TIFF)·PDF·바이너리 등 모든 파일</div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-search me-1"></i>메타데이터 추출
+          </button>
+        </form>
+      </div>
+
+      {% if result %}
+      <!-- File summary -->
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-file-earmark me-2"></i>파일 요약</h6>
+        <div class="meta-list">
+          <div class="meta-row"><span>파일명</span><span class="text-end">{{ result.filename }}</span></div>
+          <div class="meta-row"><span>크기</span><span>{{ "{:,}".format(result.size) }} bytes</span></div>
+          <div class="meta-row"><span>타입</span><span><code>{{ result.mime }}</code></span></div>
+          <div class="meta-row"><span>매직 바이트</span><span><code class="small">{{ result.magic_hex[:24] }}</code></span></div>
+        </div>
+        <div class="mt-3">
+          {% for algo, val in result.hashes.items() %}
+          <div class="hash-row mb-1">
+            <div class="hash-algo">{{ algo }}</div>
+            <div class="hash-value" onclick="this.classList.toggle('copied');navigator.clipboard.writeText('{{ val }}')">
+              {{ val[:20] }}…<i class="bi bi-clipboard ms-1 copy-icon"></i>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right -->
+    <div class="col-lg-8">
+      {% if error %}
+      <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+
+      <!-- 확장자 위조 탐지 -->
+      {% if result.spoof %}
+      {% set sp = result.spoof %}
+      {% if sp.level == 'danger' %}
+      <div class="mb-3 p-3 d-flex align-items-start gap-3"
+           style="background:#1a0a0a; border:1px solid #ef444488; border-radius:.5rem;">
+        <i class="bi bi-exclamation-triangle-fill text-danger mt-1" style="font-size:1.3rem; flex-shrink:0;"></i>
+        <div>
+          <div class="fw-bold text-danger mb-1">확장자 위조 의심!</div>
+          <div class="small" style="color:#fca5a5;">
+            파일명 확장자 <code style="color:#f87171;">{{ sp.ext }}</code> 와
+            실제 감지된 타입 <code style="color:#f87171;">{{ sp.detected_label }}</code> (<code style="color:#888; font-size:.8em;">{{ sp.detected }}</code>) 이 일치하지 않습니다.
+          </div>
+          <div class="small text-dim mt-1">예상 타입: {{ sp.expected }}</div>
+        </div>
+      </div>
+      {% elif sp.level == 'safe' %}
+      <div class="mb-3 p-3 d-flex align-items-center gap-3"
+           style="background:#0a1a0f; border:1px solid #22c55e44; border-radius:.5rem;">
+        <i class="bi bi-shield-check" style="color:#4ade80; font-size:1.3rem; flex-shrink:0;"></i>
+        <div>
+          <span class="fw-bold" style="color:#4ade80;">확장자 정상</span>
+          <span class="text-dim small ms-2">{{ sp.ext }} → {{ sp.detected_label }}</span>
+        </div>
+      </div>
+      {% elif sp.level == 'info' %}
+      <div class="mb-3 p-3 d-flex align-items-center gap-2"
+           style="background:#0d1117; border:1px solid var(--border); border-radius:.5rem;">
+        <i class="bi bi-info-circle text-dim" style="font-size:1.1rem;"></i>
+        <div class="text-dim small">
+          {% if sp.status == 'unknown_type' %}알 수 없는 파일 형식 — 매직 바이트 불일치 ({{ sp.ext }})
+          {% elif sp.status == 'unknown_ext' %}알 수 없는 확장자 {{ sp.ext }} — 감지 타입: {{ sp.detected_label }}
+          {% elif sp.status == 'no_ext' %}확장자 없음 — 감지 타입: {{ sp.detected_label }}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- GPS 발견 시 하이라이트 -->
+      {% if result.gps %}
+      <div class="gps-found-banner mb-3">
+        <i class="bi bi-geo-alt-fill me-2"></i>
+        <strong>GPS 좌표 발견!</strong>
+        <span class="ms-2">{{ result.gps.lat }}, {{ result.gps.lon }}</span>
+        {% if result.gps.alt is not none %}
+        <span class="text-dim ms-2">고도 {{ result.gps.alt }}m</span>
+        {% endif %}
+        <a href="/tools/gps" class="btn btn-sm btn-accent ms-auto">지도 보기</a>
+      </div>
+      {% endif %}
+
+      <!-- Image info -->
+      {% if result.image %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-image me-2"></i>이미지 정보</h6>
+        <div class="row g-2">
+          <div class="col-6"><div class="meta-kv"><span>포맷</span><span>{{ result.image.format }}</span></div></div>
+          <div class="col-6"><div class="meta-kv"><span>색상 모드</span><span>{{ result.image.mode }}</span></div></div>
+          <div class="col-6"><div class="meta-kv"><span>너비</span><span>{{ result.image.width }} px</span></div></div>
+          <div class="col-6"><div class="meta-kv"><span>높이</span><span>{{ result.image.height }} px</span></div></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Camera info -->
+      {% if result.camera %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-camera me-2"></i>카메라 / 장치</h6>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              {% for k, v in result.camera.items() %}
+              <tr><td class="text-accent small" style="width:160px">{{ k }}</td><td>{{ v }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Shoot settings -->
+      {% if result.shoot %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-sliders me-2"></i>촬영 설정</h6>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              {% for k, v in result.shoot.items() %}
+              <tr><td class="text-accent small" style="width:200px">{{ k }}</td><td>{{ v }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- GPS tags -->
+      {% if result.gps and result.gps.tags %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-broadcast me-2"></i>GPS EXIF 태그</h6>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>태그</th><th>값</th></tr></thead>
+            <tbody>
+              {% for k, v in result.gps.tags.items() %}
+              <tr><td class="text-accent small">{{ k }}</td><td>{{ v }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- PDF info -->
+      {% if result.pdf %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-file-pdf me-2"></i>PDF 문서 정보</h6>
+        {% if result.pdf.get('error') %}
+        <div class="text-dim small">{{ result.pdf.error }}</div>
+        {% else %}
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr><td class="text-accent small" style="width:130px">페이지 수</td><td>{{ result.pdf.pages }}</td></tr>
+              <tr><td class="text-accent small">암호화</td><td>{{ '예' if result.pdf.encrypted else '아니오' }}</td></tr>
+              {% for field in ['title','author','subject','creator','producer','created','modified'] %}
+              {% if result.pdf[field] %}
+              <tr><td class="text-accent small">{{ field }}</td><td>{{ result.pdf[field] }}</td></tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Full EXIF -->
+      {% if result.exif_all %}
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-list-ul me-2"></i>
+          전체 EXIF ({{ result.exif_all | length }}개 태그)
+        </h6>
+        <input type="text" id="metaFilter" class="form-control mb-2" placeholder="태그 검색...">
+        <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+          <table id="metaTbl">
+            <thead><tr><th>태그</th><th>값</th></tr></thead>
+            <tbody>
+              {% for k, v in result.exif_all.items() %}
+              <tr><td class="text-accent small">{{ k }}</td><td class="str-value">{{ v }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if share_token %}
+      <div class="mt-3 d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유 링크</button>
+        <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>PDF 저장</a>
+        <a href="/tools/history" class="btn btn-sm btn-outline-secondary"><i class="bi bi-archive me-1"></i>분석 이력</a>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-file-earmark-text"></i>
+        <p>파일을 업로드하면 이미지 EXIF, GPS, PDF 속성,<br>파일 해시 등 모든 메타데이터를 추출합니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('metaFilter')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#metaTbl tbody tr').forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

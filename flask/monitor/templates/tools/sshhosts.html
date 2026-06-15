@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">SSH known_hosts</span></div>
+<h1 class="page-title"><i class="bi bi-terminal me-2 text-accent"></i>SSH known_hosts</h1>
+<p class="page-sub">호스트·해시 여부·키 타입</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<textarea name="text" class="form-control mb-2" rows="10" style="font-family:monospace; font-size:.74rem;"></textarea>
+<input type="file" name="file" class="form-control mb-3">
+<button class="btn btn-accent w-100">분석</button></form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel"><h6 class="panel-title">{{ result.count }}개 호스트</h6>
+<table class="table table-sm" style="font-size:.78rem;"><thead><tr class="text-dim"><th>호스트</th><th>해시</th><th>타입</th></tr></thead><tbody>
+{% for h in result.hosts %}<tr><td><code>{{ h.host }}</code></td>
+<td>{% if h.hashed %}예{% else %}아니오{% endif %}</td>
+<td><code>{{ h.type }}</code></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}</div></div></div>{% endblock %}

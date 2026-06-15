@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">분석 이력</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-archive me-2 text-accent"></i>분석 이력</h1>
+    <p class="page-sub">지금까지 수행한 분석 결과를 확인하고 공유 링크를 생성합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  {% if not logs %}
+  <div class="empty-state">
+    <i class="bi bi-archive"></i>
+    <p>아직 분석 이력이 없습니다.<br>도구를 사용하면 자동으로 저장됩니다.</p>
+    <a href="/tools" class="btn btn-accent mt-2">분석 도구 바로가기</a>
+  </div>
+  {% else %}
+  <div class="tool-panel">
+    <h6 class="panel-title"><i class="bi bi-list-ul me-2"></i>최근 분석 {{ logs|length }}건</h6>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle" style="font-size:.88rem;">
+        <thead>
+          <tr style="color:var(--text-dim); border-bottom:1px solid var(--border);">
+            <th>도구</th>
+            <th>파일명</th>
+            <th>요약</th>
+            <th>날짜</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr style="border-bottom:1px solid #0d1a2d;">
+            <td>
+              <span class="badge" style="background:var(--bg-card);border:1px solid var(--border);color:var(--accent);">
+                {{ log.tool_label or log.tool }}
+              </span>
+            </td>
+            <td class="text-dim">{{ log.filename or '—' }}</td>
+            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ log.summary or '—' }}
+            </td>
+            <td class="text-dim" style="white-space:nowrap;">
+              {{ log.created.strftime('%m/%d %H:%M') if log.created else '—' }}
+            </td>
+            <td style="white-space:nowrap;">
+              <a href="/tools/share/{{ log.share_token }}" class="btn btn-sm btn-outline-secondary me-1" title="공유">
+                <i class="bi bi-share"></i>
+              </a>
+              <a href="/tools/report/{{ log.share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="PDF 저장">
+                <i class="bi bi-printer"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

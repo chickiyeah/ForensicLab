@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">AmCache 파서</span></div>
+<h1 class="page-title"><i class="bi bi-app-indicator me-2 text-accent"></i>AmCache 파서</h1>
+<p class="page-sub">Amcache.hve의 InventoryApplicationFile (실행파일 SHA1·LinkDate·제품명·크기).</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form><div class="form-hint">C:\Windows\AppCompat\Programs\Amcache.hve</div></div></div></div>
+{% else %}{% for r in result.files %}<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ r.filename }}{% if r.modern_count is defined %} — Modern {{ r.modern_count }}, Legacy {{ r.legacy_count }}{% endif %}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>{% else %}
+{% if r.modern %}<div style="max-height:500px; overflow-y:auto;"><table class="table table-sm" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>키</th><th>FileId</th><th>Path</th><th>LinkDate</th><th>Size</th></tr></thead><tbody>
+{% for a in r.modern[:200] %}<tr><td><code style="font-size:.72rem;">{{ a.subkey[:30] }}</code></td>
+<td><code style="font-size:.7rem; word-break:break-all;">{{ a.get('FileId','')[:50] }}</code></td>
+<td style="word-break:break-all;">{{ a.get('LowerCaseLongPath','') }}</td>
+<td>{{ a.get('LinkDate','') }}</td><td>{{ a.get('Size','') }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+{% endif %}</div>{% endfor %}
+{% endif %}</div>{% endblock %}

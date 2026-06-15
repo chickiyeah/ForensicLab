@@ -1,4 +1,4 @@
-"""ForensicLab 6차 확장 — '유료 왜 씀?' 모드
+﻿"""ForensicLab 6차 확장 — '유료 왜 씀?' 모드
 
 10대 엔터프라이즈 시스템:
 1. /tools/case        사건 관리 (Case Management)
@@ -27,7 +27,7 @@ from collections import Counter
 from functools import wraps
 from flask import request, render_template, jsonify, send_file, abort, url_for, session, redirect, flash
 
-from hospital.views.tools import bp, _save_log
+from monitor.views.tools import bp, _save_log
 
 
 # ────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ def login_required(fn):
             return jsonify({'error': '로그인 필요'}), 401
         return fn(*args, **kwargs)
     return wrap
-from hospital.views.tools_extra5 import _coc_record, _new_job, _job_log
+from monitor.views.tools_extra5 import _coc_record, _new_job, _job_log
 
 
 # ====================================================================

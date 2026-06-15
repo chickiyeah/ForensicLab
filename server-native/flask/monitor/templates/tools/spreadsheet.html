@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">CSV / Excel 뷰어</span></div>
+<h1 class="page-title"><i class="bi bi-table me-2 text-accent"></i>CSV / Excel 뷰어</h1>
+<p class="page-sub">CSV·TSV·XLSX 업로드 후 표 형식 표시.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form></div></div></div>
+{% else %}{% for r in result.files %}
+<div class="tool-panel mb-3"><h6 class="panel-title">{{ r.filename }}{% if r.format %} <span class="tag">{{ r.format }}</span>{% endif %}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>
+{% elif r.format == 'CSV' %}
+<div class="text-dim small mb-2">{{ r.rows_total }}행 · {{ r.cols }}열 · 구분자 <code>{{ r.delimiter }}</code></div>
+<div style="max-height:500px; overflow:auto;"><table class="table table-sm" style="font-size:.76rem;">
+<thead style="position:sticky; top:0; background:var(--bg-card);"><tr>
+{% for h in r.headers %}<th class="text-dim">{{ h }}</th>{% endfor %}
+</tr></thead><tbody>
+{% for row in r.rows %}<tr>{% for c in row %}<td style="max-width:300px; overflow:hidden; text-overflow:ellipsis;">{{ c }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+{% elif r.format == 'XLSX' %}{% for sh in r.sheets %}
+<details class="mb-2"><summary style="cursor:pointer;"><strong>{{ sh.name }}</strong> <span class="text-dim small">{{ sh.rows }}행 · {{ sh.cols }}열</span></summary>
+<div style="max-height:400px; overflow:auto; margin-top:.5rem;"><table class="table table-sm" style="font-size:.76rem;">
+<thead><tr>{% for h in sh.headers %}<th class="text-dim">{{ h }}</th>{% endfor %}</tr></thead>
+<tbody>{% for row in sh.data %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div></details>
+{% endfor %}{% endif %}
+</div>{% endfor %}
+{% endif %}</div>{% endblock %}

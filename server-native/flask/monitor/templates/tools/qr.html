@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">QR / 바코드 디코더</span></div>
+<h1 class="page-title"><i class="bi bi-qr-code-scan me-2 text-accent"></i>QR / 바코드 디코더</h1>
+<p class="page-sub">이미지에서 QR·EAN·Code128·Code39 등 1D/2D 바코드를 인식해 텍스트를 추출합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept="image/*" required>
+<button class="btn btn-accent w-100"><i class="bi bi-qr-code-scan me-1"></i>스캔</button>
+</form>
+<div class="text-dim small mt-3"><i class="bi bi-info-circle me-1"></i>이 도구는 pyzbar+libzbar이 설치된 환경에서 동작합니다.</div>
+</div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ result.image_size }} · {{ result.codes|length }}개 코드</span>
+<a href="/tools/qr" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 이미지</a></div>
+{% if result.codes %}{% for c in result.codes %}
+<div class="tool-panel mb-2"><h6 class="panel-title"><span class="tag">{{ c.type }}</span> <span class="text-dim small ms-2">{{ c.rect }}</span></h6>
+<div style="word-break:break-all; font-family:monospace; font-size:.84rem;">{{ c.data }}</div>
+{% if c.data.startswith('http') %}<a href="{{ c.data }}" target="_blank" class="btn btn-sm btn-outline-info mt-2"><i class="bi bi-box-arrow-up-right me-1"></i>URL 열기</a>{% endif %}
+</div>{% endfor %}
+{% else %}<div class="tool-panel text-dim">{{ result.note or '코드 없음' }}</div>{% endif %}
+{% endif %}
+</div>{% endblock %}

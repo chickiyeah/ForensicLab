@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Linux dmesg / journalctl</span></div>
+<h1 class="page-title"><i class="bi bi-terminal-fill me-2 text-accent"></i>Linux dmesg / journalctl</h1>
+<p class="page-sub">커널·systemd 저널 분석 (USB·디스크·sshd·sudo 카테고리).</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-4"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept=".log,.txt">
+<textarea name="text" class="form-control mb-3" rows="10" style="font-family:monospace; font-size:.74rem;"></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div>
+<div class="col-lg-8">{% if result %}<div class="tool-panel mb-2">
+<h6 class="panel-title">통계</h6>
+<div class="d-flex gap-3"><span><strong style="color:#ef4444">{{ result.errors }}</strong> Errors</span>
+<span><strong style="color:#f59e0b">{{ result.warnings }}</strong> Warnings</span>
+<span>총 {{ result.total }}</span></div>
+{% if result.top_categories %}<div class="mt-2">{% for c, n in result.top_categories %}<span class="tag me-1">{{ c }}: {{ n }}</span>{% endfor %}</div>{% endif %}
+</div>
+<div class="tool-panel"><div style="max-height:600px; overflow-y:auto; font-family:monospace; font-size:.74rem;">
+{% for e in result.events %}{% if e.severity == 'error' %}<div style="color:#ef4444; padding:.1rem .3rem;">{{ e.raw }}</div>{% elif e.severity == 'warn' %}<div style="color:#f59e0b; padding:.1rem .3rem;">{{ e.raw }}</div>{% else %}<div style="padding:.1rem .3rem;">{{ e.raw }}</div>{% endif %}{% endfor %}
+</div></div>{% endif %}
+</div></div></div>{% endblock %}

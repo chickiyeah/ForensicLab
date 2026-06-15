@@ -1,0 +1,147 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<h1 class="page-title"><i class="bi bi-cpu me-2"></i>분석 도구 카탈로그</h1>
+<p class="page-sub">디지털 포렌식 분석에 필요한 모든 도구를 한 곳에서. 검색 박스로 빠르게 찾을 수 있습니다.</p>
+</div></div>
+
+<div class="container pb-5">
+
+<!-- 초보자/전문가 모드 토글 -->
+<div class="d-flex gap-2 mb-3 align-items-center flex-wrap" style="background:var(--bg-card); padding:.7rem 1rem; border-radius:.5rem; border:1px solid var(--border);">
+<strong style="color:var(--accent);"><i class="bi bi-toggle2-on me-2"></i>모드:</strong>
+<div class="btn-group" role="group">
+<input type="radio" class="btn-check" name="mode" id="modeBeginner" autocomplete="off">
+<label class="btn btn-outline-success" for="modeBeginner"><i class="bi bi-mortarboard-fill me-1"></i>초보자 모드</label>
+<input type="radio" class="btn-check" name="mode" id="modeExpert" autocomplete="off" checked>
+<label class="btn btn-outline-info" for="modeExpert"><i class="bi bi-cpu-fill me-1"></i>전문가 모드</label>
+</div>
+<div class="text-dim small ms-2" id="modeDesc">
+<strong style="color:#00d4ff;">전문가 모드:</strong> 모든 156개 도구를 자유롭게 탐색
+</div>
+<a href="/tools/beginner" class="btn btn-success btn-sm ms-auto"><i class="bi bi-mortarboard-fill me-1"></i>초보자 가이드 →</a>
+</div>
+
+<!-- 무료 안내 배너 -->
+<div class="d-flex align-items-center gap-3 p-3 mb-3" style="background:linear-gradient(90deg, rgba(34,197,94,.12), rgba(0,212,255,.08)); border:1px solid rgba(34,197,94,.3); border-radius:.6rem;">
+  <i class="bi bi-unlock-fill" style="font-size:1.8rem; color:#22c55e;"></i>
+  <div style="flex:1;">
+    <div style="font-weight:700; font-size:1rem; color:#22c55e;">전체 도구 100% 무료 · 회원가입 없이 사용</div>
+    <div class="text-dim" style="font-size:.82rem; line-height:1.5;">
+      <strong style="color:#f59e0b;">PRO</strong> · <strong style="color:#00d4ff;">엔터프라이즈</strong> 배지는 기능 수준 표시일 뿐 모두 무료입니다.
+      Volatility / ALEAPP / iLEAPP / E01 / 사건관리 / Chain of Custody / LLM 보고서 등 유료 도구 ($3K~수천만원) 기능을 동일하게 제공합니다.
+    </div>
+  </div>
+  <div style="text-align:right; font-size:.74rem;">
+    <div style="color:#22c55e;"><i class="bi bi-check-circle-fill me-1"></i>무료</div>
+    <div style="color:#22c55e;"><i class="bi bi-check-circle-fill me-1"></i>오픈소스</div>
+    <div style="color:#22c55e;"><i class="bi bi-check-circle-fill me-1"></i>자체 호스팅</div>
+  </div>
+</div>
+
+<!-- 검색 박스 -->
+<div class="tool-panel mb-3" style="position:sticky; top:60px; z-index:10; background:var(--bg-card);">
+<div class="d-flex gap-2 align-items-center">
+<div class="position-relative flex-grow-1">
+<i class="bi bi-search position-absolute" style="left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-dim);"></i>
+<input type="text" id="toolSearch" class="form-control" placeholder="도구 검색... (예: hash, MFT, JWT, 모바일, 메모리)" style="padding-left:2.3rem;" autofocus>
+</div>
+<button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('toolSearch').value='';doFilter();"><i class="bi bi-x"></i></button>
+<span class="text-dim small ms-2" id="resultCount"></span>
+</div>
+<div class="mt-2 d-flex flex-wrap gap-1" id="catFilter">
+<button class="btn btn-sm btn-accent" data-cat="all" onclick="setCat('all')">전체</button>
+{% set cats = tools | groupby('cat') %}
+{% for cat, items in cats %}<button class="btn btn-sm btn-outline-secondary" data-cat="{{ cat }}" onclick="setCat('{{ cat }}')">{{ cat }} ({{ items|length }})</button>{% endfor %}
+</div>
+</div>
+
+<div class="row g-2" id="toolGrid">
+{% for t in tools %}
+<div class="col-md-6 col-lg-4 col-xl-3 tool-item" data-name="{{ t.name|lower }} {{ t.desc|lower }} {{ t.keywords|lower }}" data-cat="{{ t.cat }}">
+<a href="{{ t.url }}" class="tool-card-link">
+<div class="tool-card h-100" style="border-left:3px solid {{ t.color }};">
+<div class="d-flex align-items-center gap-2 mb-1">
+<i class="bi {{ t.icon }}" style="font-size:1.2rem; color:{{ t.color }};"></i>
+<strong style="font-size:.85rem;">{{ t.name }}</strong>
+{% if t.pro %}<span class="badge bg-warning text-dark ms-auto" style="font-size:.55rem;" title="고급 기능 — 무료 (이 도구도 다른 도구와 동일하게 무료입니다)">PRO · 무료</span>{% endif %}
+</div>
+<p class="text-dim mb-1" style="font-size:.74rem; line-height:1.35;">{{ t.desc }}</p>
+<div class="d-flex justify-content-between" style="font-size:.7rem;">
+<span class="text-dim">{{ t.cat }}</span>
+<code class="text-accent">/tools/{{ t.url.split('/tools/')[-1] }}</code>
+</div></div></a></div>
+{% endfor %}
+</div>
+
+</div>
+
+<script>
+function doFilter() {
+  const q = document.getElementById('toolSearch').value.toLowerCase().trim();
+  const cat = document.querySelector('#catFilter .btn-accent')?.dataset?.cat || 'all';
+  let vis = 0;
+  document.querySelectorAll('.tool-item').forEach(el => {
+    const okq = !q || el.dataset.name.includes(q);
+    const okc = cat === 'all' || el.dataset.cat === cat;
+    el.style.display = okq && okc ? '' : 'none';
+    if (okq && okc) vis++;
+  });
+  document.getElementById('resultCount').textContent = vis + ' / {{ tools|length }}개';
+}
+function setCat(cat) {
+  document.querySelectorAll('#catFilter .btn').forEach(b => {
+    b.classList.remove('btn-accent');
+    b.classList.add('btn-outline-secondary');
+    if (b.dataset.cat === cat) {
+      b.classList.add('btn-accent');
+      b.classList.remove('btn-outline-secondary');
+    }
+  });
+  doFilter();
+}
+document.getElementById('toolSearch').addEventListener('input', doFilter);
+
+// 초보자 모드: 핵심 30개 도구만 표시
+const BEGINNER_TOOLS = new Set([
+  '/tools/auto','/tools/autoanalyze','/tools/hash','/tools/magic','/tools/entropy',
+  '/tools/pe','/tools/strings','/tools/decode','/tools/time','/tools/ioc',
+  '/tools/registry','/tools/evtx','/tools/prefetch','/tools/lnk','/tools/email',
+  '/tools/pdfscan','/tools/oledump','/tools/gps','/tools/metadata','/tools/jwt',
+  '/tools/sqlite','/tools/multihash','/tools/uaparse','/tools/urlsafe','/tools/dnslookup',
+  '/tools/cve','/tools/attack','/tools/threat-intel','/tools/scripts','/tools/verify',
+]);
+function applyMode() {
+  const beg = document.getElementById('modeBeginner').checked;
+  document.getElementById('modeDesc').innerHTML = beg
+    ? '<strong style="color:#22c55e;">초보자 모드:</strong> 자주 쓰는 핵심 30개 도구만 표시 — <a href="/tools/beginner" class="text-success">시나리오 가이드</a> 도 함께 보세요'
+    : '<strong style="color:#00d4ff;">전문가 모드:</strong> 모든 {{ tools|length }}개 도구를 자유롭게 탐색';
+  document.querySelectorAll('.tool-item').forEach(el => {
+    const url = el.querySelector('a.tool-card-link')?.getAttribute('href') || '';
+    el.dataset.modeFilter = beg && !BEGINNER_TOOLS.has(url) ? 'hidden' : '';
+  });
+  doFilter();
+}
+const _orig = doFilter;
+window.doFilter = function() {
+  const q = document.getElementById('toolSearch').value.toLowerCase().trim();
+  const cat = document.querySelector('#catFilter .btn-accent')?.dataset?.cat || 'all';
+  let vis = 0;
+  document.querySelectorAll('.tool-item').forEach(el => {
+    const okq = !q || el.dataset.name.includes(q);
+    const okc = cat === 'all' || el.dataset.cat === cat;
+    const okm = el.dataset.modeFilter !== 'hidden';
+    el.style.display = okq && okc && okm ? '' : 'none';
+    if (okq && okc && okm) vis++;
+  });
+  document.getElementById('resultCount').textContent = vis + ' / {{ tools|length }}개';
+};
+document.getElementById('modeBeginner').addEventListener('change', applyMode);
+document.getElementById('modeExpert').addEventListener('change', applyMode);
+// 로컬스토리지로 모드 기억
+const savedMode = localStorage.getItem('toolMode') || 'expert';
+document.getElementById(savedMode === 'beginner' ? 'modeBeginner' : 'modeExpert').checked = true;
+document.getElementById('modeBeginner').addEventListener('change', ()=>localStorage.setItem('toolMode','beginner'));
+document.getElementById('modeExpert').addEventListener('change', ()=>localStorage.setItem('toolMode','expert'));
+applyMode();
+</script>
+{% endblock %}

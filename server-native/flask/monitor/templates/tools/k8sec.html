@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Kubernetes YAML 보안</span></div>
+<h1 class="page-title"><i class="bi bi-diagram-3-fill me-2 text-accent"></i>Kubernetes YAML 보안</h1>
+<p class="page-sub">privileged·hostNetwork·root·capabilities 검사</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<textarea name="text" class="form-control mb-2" rows="16" style="font-family:monospace; font-size:.74rem;"></textarea>
+<input type="file" name="file" class="form-control mb-3" accept=".yaml,.yml">
+<button class="btn btn-accent w-100"><i class="bi bi-shield-check me-1"></i>검사</button>
+</form></div></div>
+<div class="col-lg-6">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.docs_count }}개 문서 · {{ result.issues|length }}개 이슈 · 점수 {{ result.score }}</h6>
+{% for i in result.issues %}<div class="p-2 mb-1" style="background:var(--bg); border-left:3px solid {% if i.sev=='critical' %}#dc2626{% elif i.sev=='high' %}#ef4444{% elif i.sev=='medium' %}#f59e0b{% else %}#6b7280{% endif %};">
+<span class="tag me-2">{{ i.kind }}</span><span class="text-dim small">[{{ i.sev }}]</span> {{ i.msg }}</div>{% endfor %}
+</div>{% endif %}</div></div></div>{% endblock %}

@@ -1,0 +1,267 @@
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <i class="bi bi-shield-lock-fill text-accent"></i>
+      <span class="fw-bold">Forensic<span class="text-accent">Lab</span></span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>홈</a></li>
+        <li class="nav-item"><a class="nav-link" href="/intro"><i class="bi bi-info-circle me-1"></i>소개</a></li>
+        <li class="nav-item"><a class="nav-link text-accent" href="/tools"><i class="bi bi-grid-3x3-gap-fill me-1"></i>전체 도구 (150+)</a></li>
+        <li class="nav-item"><a class="nav-link text-success" href="/tools/beginner"><i class="bi bi-mortarboard-fill me-1"></i>초보자 가이드</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tools/forensic-paths"><i class="bi bi-signpost-2-fill me-1"></i>핵심 경로</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tools/glossary"><i class="bi bi-book me-1"></i>용어집</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tools/help"><i class="bi bi-question-circle me-1"></i>도움말</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tools/case"><i class="bi bi-folder-fill me-1"></i>사건 관리</a></li>
+        <li class="nav-item"><a class="nav-link" href="/tools/dashboard"><i class="bi bi-speedometer2 me-1"></i>대시보드</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-cpu me-1"></i>퀵 액세스
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item text-accent" href="/tools"><i class="bi bi-grid-3x3-gap-fill me-2"></i>전체 카탈로그 (검색·필터)</a></li>
+            <li><a class="dropdown-item text-accent" href="/tools/auto"><i class="bi bi-magic me-2"></i>자동 라우터</a></li>
+            <li><a class="dropdown-item text-accent" href="/tools/autoanalyze"><i class="bi bi-magic me-2"></i>자동 분석</a></li>
+            <li><a class="dropdown-item text-accent" href="/tools/search"><i class="bi bi-search me-2"></i>전체 검색</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">PRO 도구</h6></li>
+            <li><a class="dropdown-item text-warning" href="/tools/vol-full"><i class="bi bi-cpu-fill me-2"></i>Volatility 풀</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/aleapp"><i class="bi bi-android2 me-2"></i>ALEAPP</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/ileapp"><i class="bi bi-phone me-2"></i>iLEAPP</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/e01-mount"><i class="bi bi-hdd-rack-fill me-2"></i>E01 분석</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/hashcat-job"><i class="bi bi-shield-lock me-2"></i>Hashcat</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/llm-report"><i class="bi bi-robot me-2"></i>LLM 보고서</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/coc"><i class="bi bi-link-45deg me-2"></i>CoC</a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/jobs"><i class="bi bi-cpu me-2"></i>작업 큐</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">엔터프라이즈</h6></li>
+            <li><a class="dropdown-item" href="/tools/case"><i class="bi bi-folder-fill me-2"></i>사건 관리</a></li>
+            <li><a class="dropdown-item" href="/tools/dashboard"><i class="bi bi-speedometer2 me-2"></i>대시보드</a></li>
+            <li><a class="dropdown-item" href="/tools/attack"><i class="bi bi-bullseye me-2"></i>MITRE ATT&CK</a></li>
+            <li><a class="dropdown-item" href="/tools/threat-intel"><i class="bi bi-radar me-2"></i>위협 인텔</a></li>
+            <li><a class="dropdown-item" href="/tools/ai-classify"><i class="bi bi-robot me-2"></i>AI 분류</a></li>
+            <li><a class="dropdown-item" href="/tools/plaso"><i class="bi bi-stack me-2"></i>Plaso 타임라인</a></li>
+            <li><a class="dropdown-item" href="/tools/ocr-index"><i class="bi bi-search me-2"></i>OCR 인덱싱</a></li>
+            <li><a class="dropdown-item" href="/tools/face"><i class="bi bi-person-bounding-box me-2"></i>얼굴 인식</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">자주 쓰는 도구</h6></li>
+            <li><a class="dropdown-item" href="/tools/hash"><i class="bi bi-fingerprint me-2"></i>해시 검증</a></li>
+            <li><a class="dropdown-item" href="/tools/carve"><i class="bi bi-file-earmark-binary me-2"></i>파일 카빙</a></li>
+            <li><a class="dropdown-item" href="/tools/mbr"><i class="bi bi-hdd me-2"></i>MBR 분석</a></li>
+            <li><a class="dropdown-item text-danger" href="/tools/mbr-repair"><i class="bi bi-hdd-stack me-2"></i>MBR 복구 <span class="badge bg-danger ms-1" style="font-size:.65rem">Write</span></a></li>
+            <li><a class="dropdown-item" href="/tools/strings"><i class="bi bi-braces me-2"></i>문자열 추출</a></li>
+            <li><a class="dropdown-item" href="/tools/log"><i class="bi bi-journal-text me-2"></i>로그 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/gps"><i class="bi bi-geo-alt me-2"></i>GPS 추출</a></li>
+            <li><a class="dropdown-item" href="/tools/metadata"><i class="bi bi-file-earmark-text me-2"></i>메타데이터 추출</a></li>
+            <li><a class="dropdown-item" href="/tools/timeline"><i class="bi bi-clock-history me-2"></i>타임라인 재구성</a></li>
+            <li><a class="dropdown-item" href="/tools/pcap"><i class="bi bi-wifi me-2"></i>패킷 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/email"><i class="bi bi-envelope-open me-2"></i>이메일 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/registry"><i class="bi bi-diagram-2 me-2"></i>레지스트리 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/zipcrack"><i class="bi bi-file-earmark-zip me-2"></i>ZIP 암호 해제</a></li>
+            <li><a class="dropdown-item" href="/tools/encrypt"><i class="bi bi-shield-lock me-2"></i>파일 암호화</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">실행파일 / 디스크</h6></li>
+            <li><a class="dropdown-item" href="/tools/pe"><i class="bi bi-cpu-fill me-2"></i>PE / ELF / Mach-O</a></li>
+            <li><a class="dropdown-item" href="/tools/entropy"><i class="bi bi-bar-chart-line-fill me-2"></i>엔트로피·시그니처</a></li>
+            <li><a class="dropdown-item" href="/tools/diskimg"><i class="bi bi-hdd-network-fill me-2"></i>디스크 이미지</a></li>
+            <li><a class="dropdown-item" href="/tools/prefetch"><i class="bi bi-fast-forward-fill me-2"></i>Prefetch 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/lnk"><i class="bi bi-link-45deg me-2"></i>LNK 바로가기</a></li>
+            <li><a class="dropdown-item" href="/tools/decode"><i class="bi bi-translate me-2"></i>다중 디코더</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">Windows 아티팩트</h6></li>
+            <li><a class="dropdown-item" href="/tools/evtx"><i class="bi bi-journal-text me-2"></i>EVTX 이벤트 로그</a></li>
+            <li><a class="dropdown-item" href="/tools/jumplist"><i class="bi bi-bookmark-fill me-2"></i>JumpList</a></li>
+            <li><a class="dropdown-item" href="/tools/mft"><i class="bi bi-list-columns-reverse me-2"></i>$MFT 파서</a></li>
+            <li><a class="dropdown-item" href="/tools/esedb"><i class="bi bi-database-fill me-2"></i>ESE DB 헤더</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">문서·DB</h6></li>
+            <li><a class="dropdown-item" href="/tools/sqlite"><i class="bi bi-database me-2"></i>SQLite 브라우저</a></li>
+            <li><a class="dropdown-item" href="/tools/oledump"><i class="bi bi-file-earmark-word-fill me-2"></i>VBA·OLE 추출</a></li>
+            <li><a class="dropdown-item" href="/tools/pdfscan"><i class="bi bi-file-earmark-pdf-fill me-2"></i>PDF 악성 분석</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">보안·암호</h6></li>
+            <li><a class="dropdown-item" href="/tools/jwt"><i class="bi bi-key-fill me-2"></i>JWT 디코더</a></li>
+            <li><a class="dropdown-item" href="/tools/cert"><i class="bi bi-shield-fill-check me-2"></i>X.509 인증서</a></li>
+            <li><a class="dropdown-item" href="/tools/yara"><i class="bi bi-search me-2"></i>YARA 스캐너</a></li>
+            <li><a class="dropdown-item" href="/tools/secrets"><i class="bi bi-shield-lock-fill me-2"></i>Secret 스캐너</a></li>
+            <li><a class="dropdown-item" href="/tools/passwd"><i class="bi bi-key me-2"></i>암호 강도</a></li>
+            <li><a class="dropdown-item" href="/tools/stego"><i class="bi bi-eye-fill me-2"></i>스테가노그래피</a></li>
+            <li><a class="dropdown-item" href="/tools/hexdiff"><i class="bi bi-distribute-horizontal me-2"></i>헥스 비교</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">네트워크·메일</h6></li>
+            <li><a class="dropdown-item" href="/tools/email-auth"><i class="bi bi-envelope-check-fill me-2"></i>SPF/DKIM/DMARC</a></li>
+            <li><a class="dropdown-item" href="/tools/dns"><i class="bi bi-broadcast me-2"></i>DNS / DGA 탐지</a></li>
+            <li><a class="dropdown-item" href="/tools/whois"><i class="bi bi-globe-asia-australia me-2"></i>WHOIS / IP</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">이미지·기타</h6></li>
+            <li><a class="dropdown-item" href="/tools/qr"><i class="bi bi-qr-code-scan me-2"></i>QR / 바코드</a></li>
+            <li><a class="dropdown-item" href="/tools/ocr"><i class="bi bi-card-text me-2"></i>이미지 OCR</a></li>
+            <li><a class="dropdown-item" href="/tools/phash"><i class="bi bi-images me-2"></i>이미지 유사도</a></li>
+            <li><a class="dropdown-item" href="/tools/git"><i class="bi bi-git me-2"></i>Git 저장소 분석</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">macOS·모바일</h6></li>
+            <li><a class="dropdown-item" href="/tools/plist"><i class="bi bi-apple me-2"></i>Plist 파서</a></li>
+            <li><a class="dropdown-item" href="/tools/heif"><i class="bi bi-image-fill me-2"></i>HEIC / HEIF</a></li>
+            <li><a class="dropdown-item" href="/tools/ios-backup"><i class="bi bi-phone-fill me-2"></i>iOS Manifest.db</a></li>
+            <li><a class="dropdown-item" href="/tools/apk"><i class="bi bi-android2 me-2"></i>APK 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/whatsapp"><i class="bi bi-whatsapp me-2"></i>WhatsApp DB</a></li>
+            <li><a class="dropdown-item" href="/tools/telegram"><i class="bi bi-telegram me-2"></i>Telegram tdata</a></li>
+            <li><a class="dropdown-item" href="/tools/pst"><i class="bi bi-envelope-fill me-2"></i>Outlook PST/OST</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">악성·위협</h6></li>
+            <li><a class="dropdown-item" href="/tools/amcache"><i class="bi bi-app-indicator me-2"></i>AmCache 파서</a></li>
+            <li><a class="dropdown-item" href="/tools/sigma"><i class="bi bi-search-heart me-2"></i>Sigma 규칙</a></li>
+            <li><a class="dropdown-item" href="/tools/psdeobf"><i class="bi bi-arrow-clockwise me-2"></i>PowerShell 디오브푸</a></li>
+            <li><a class="dropdown-item" href="/tools/jsdeobf"><i class="bi bi-filetype-js me-2"></i>JS 디오브푸스케이션</a></li>
+            <li><a class="dropdown-item" href="/tools/ioc"><i class="bi bi-search me-2"></i>IOC 추출기</a></li>
+            <li><a class="dropdown-item" href="/tools/cuckoo"><i class="bi bi-bug-fill me-2"></i>Cuckoo / CAPE</a></li>
+            <li><a class="dropdown-item" href="/tools/memscan"><i class="bi bi-memory me-2"></i>메모리 IOC 스캔</a></li>
+            <li><a class="dropdown-item" href="/tools/vol"><i class="bi bi-cpu-fill me-2"></i>Volatility</a></li>
+            <li><a class="dropdown-item" href="/tools/cve"><i class="bi bi-bug me-2"></i>CVE 검색</a></li>
+            <li><a class="dropdown-item" href="/tools/hashlookup"><i class="bi bi-fingerprint me-2"></i>해시 룩업</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">네트워크·로그</h6></li>
+            <li><a class="dropdown-item" href="/tools/har"><i class="bi bi-globe2 me-2"></i>HAR 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/dmesg"><i class="bi bi-terminal-fill me-2"></i>dmesg / journalctl</a></li>
+            <li><a class="dropdown-item" href="/tools/cidr"><i class="bi bi-diagram-3 me-2"></i>CIDR 계산기</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">네트워크·보안 검사</h6></li>
+            <li><a class="dropdown-item" href="/tools/httpsec"><i class="bi bi-shield-check me-2"></i>HTTP 보안 헤더</a></li>
+            <li><a class="dropdown-item" href="/tools/tls"><i class="bi bi-shield-lock-fill me-2"></i>TLS 인증서</a></li>
+            <li><a class="dropdown-item" href="/tools/portscan"><i class="bi bi-ethernet me-2"></i>포트 스캐너</a></li>
+            <li><a class="dropdown-item" href="/tools/dnslookup"><i class="bi bi-broadcast me-2"></i>DNS 종합 조회</a></li>
+            <li><a class="dropdown-item" href="/tools/geoip"><i class="bi bi-geo-alt-fill me-2"></i>GeoIP / IP 분류</a></li>
+            <li><a class="dropdown-item" href="/tools/cidrcompare"><i class="bi bi-diagram-3 me-2"></i>CIDR 다중 비교</a></li>
+            <li><a class="dropdown-item" href="/tools/urlsafe"><i class="bi bi-link me-2"></i>URL 안전 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/uaparse"><i class="bi bi-window me-2"></i>User-Agent 파서</a></li>
+            <li><a class="dropdown-item" href="/tools/emaildeep"><i class="bi bi-envelope-fill me-2"></i>이메일 헤더 심층</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">암호·서명</h6></li>
+            <li><a class="dropdown-item" href="/tools/multihash"><i class="bi bi-fingerprint me-2"></i>다중 해시</a></li>
+            <li><a class="dropdown-item" href="/tools/sign"><i class="bi bi-pen-fill me-2"></i>HMAC/RSA/ECDSA</a></li>
+            <li><a class="dropdown-item" href="/tools/jwe"><i class="bi bi-key-fill me-2"></i>JWE / JWS</a></li>
+            <li><a class="dropdown-item" href="/tools/pgp"><i class="bi bi-envelope-paper me-2"></i>PGP 메시지</a></li>
+            <li><a class="dropdown-item" href="/tools/pkcs7"><i class="bi bi-collection me-2"></i>PKCS#7 / CMS</a></li>
+            <li><a class="dropdown-item" href="/tools/sshhosts"><i class="bi bi-terminal me-2"></i>SSH known_hosts</a></li>
+            <li><a class="dropdown-item" href="/tools/gpgkey"><i class="bi bi-key me-2"></i>GPG 키</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">iOS 포렌식</h6></li>
+            <li><a class="dropdown-item" href="/tools/ios-sms"><i class="bi bi-chat-dots-fill me-2"></i>iOS SMS</a></li>
+            <li><a class="dropdown-item" href="/tools/ios-photos"><i class="bi bi-camera-fill me-2"></i>iOS Photos</a></li>
+            <li><a class="dropdown-item" href="/tools/ios-calendar"><i class="bi bi-calendar-event-fill me-2"></i>iOS Calendar</a></li>
+            <li><a class="dropdown-item" href="/tools/ios-notes"><i class="bi bi-journal-text me-2"></i>iOS Notes</a></li>
+            <li><a class="dropdown-item" href="/tools/ios-health"><i class="bi bi-heart-pulse-fill me-2"></i>iOS Health</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">Android 포렌식</h6></li>
+            <li><a class="dropdown-item" href="/tools/android-contacts"><i class="bi bi-person-rolodex me-2"></i>Android 연락처</a></li>
+            <li><a class="dropdown-item" href="/tools/android-sms"><i class="bi bi-chat-fill me-2"></i>Android SMS</a></li>
+            <li><a class="dropdown-item" href="/tools/android-calllog"><i class="bi bi-telephone-fill me-2"></i>Android 통화기록</a></li>
+            <li><a class="dropdown-item" href="/tools/android-wifi"><i class="bi bi-wifi me-2"></i>Android Wi-Fi</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">macOS 포렌식</h6></li>
+            <li><a class="dropdown-item" href="/tools/fsevents"><i class="bi bi-eye-fill me-2"></i>FSEvents</a></li>
+            <li><a class="dropdown-item" href="/tools/knowledgec"><i class="bi bi-clock-fill me-2"></i>KnowledgeC.db</a></li>
+            <li><a class="dropdown-item" href="/tools/quarantine"><i class="bi bi-shield-x me-2"></i>QuarantineEventsV2</a></li>
+            <li><a class="dropdown-item" href="/tools/spotlight"><i class="bi bi-search me-2"></i>Spotlight</a></li>
+            <li><a class="dropdown-item" href="/tools/keychain"><i class="bi bi-key-fill me-2"></i>Keychain</a></li>
+            <li><a class="dropdown-item" href="/tools/tcc"><i class="bi bi-shield-shaded me-2"></i>TCC.db</a></li>
+            <li><a class="dropdown-item" href="/tools/tracev3"><i class="bi bi-journal-code me-2"></i>tracev3</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">브라우저 캐시</h6></li>
+            <li><a class="dropdown-item" href="/tools/chromecache"><i class="bi bi-browser-chrome me-2"></i>Chrome Cache</a></li>
+            <li><a class="dropdown-item" href="/tools/firefoxcache"><i class="bi bi-browser-firefox me-2"></i>Firefox cache2</a></li>
+            <li><a class="dropdown-item" href="/tools/localstorage"><i class="bi bi-database me-2"></i>LocalStorage</a></li>
+            <li><a class="dropdown-item" href="/tools/indexeddb"><i class="bi bi-database-fill me-2"></i>IndexedDB</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">클라우드·DevOps</h6></li>
+            <li><a class="dropdown-item" href="/tools/dockerfile"><i class="bi bi-box-fill me-2"></i>Dockerfile 보안</a></li>
+            <li><a class="dropdown-item" href="/tools/k8sec"><i class="bi bi-diagram-3-fill me-2"></i>Kubernetes 보안</a></li>
+            <li><a class="dropdown-item" href="/tools/terraform"><i class="bi bi-cloud-fill me-2"></i>Terraform tfstate</a></li>
+            <li><a class="dropdown-item" href="/tools/cloudtrail"><i class="bi bi-cloud-fill me-2"></i>AWS CloudTrail</a></li>
+            <li><a class="dropdown-item" href="/tools/azureactivity"><i class="bi bi-cloud-fill me-2"></i>Azure Activity</a></li>
+            <li><a class="dropdown-item" href="/tools/gcpaudit"><i class="bi bi-cloud-fill me-2"></i>GCP Audit</a></li>
+            <li><a class="dropdown-item" href="/tools/k8saudit"><i class="bi bi-cloud-fill me-2"></i>K8s Audit</a></li>
+            <li><a class="dropdown-item" href="/tools/o365audit"><i class="bi bi-cloud-fill me-2"></i>Office 365 Audit</a></li>
+            <li><a class="dropdown-item" href="/tools/pkgvuln"><i class="bi bi-shield-exclamation me-2"></i>패키지 취약점</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">악성코드 강화</h6></li>
+            <li><a class="dropdown-item" href="/tools/vbastomp"><i class="bi bi-incognito me-2"></i>VBA Stomping</a></li>
+            <li><a class="dropdown-item" href="/tools/xlm"><i class="bi bi-file-spreadsheet me-2"></i>XLM 매크로</a></li>
+            <li><a class="dropdown-item" href="/tools/msi"><i class="bi bi-windows me-2"></i>MSI 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/msix"><i class="bi bi-app me-2"></i>MSIX/UWP</a></li>
+            <li><a class="dropdown-item" href="/tools/chm"><i class="bi bi-question-circle-fill me-2"></i>CHM 파일</a></li>
+            <li><a class="dropdown-item" href="/tools/gobin"><i class="bi bi-filetype-exe me-2"></i>Go/Rust 바이너리</a></li>
+            <li><a class="dropdown-item" href="/tools/dotnet"><i class="bi bi-cpu me-2"></i>.NET 어셈블리</a></li>
+            <li><a class="dropdown-item" href="/tools/applocker"><i class="bi bi-shield-fill-check me-2"></i>AppLocker 정책</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">압축·이미지</h6></li>
+            <li><a class="dropdown-item" href="/tools/iso"><i class="bi bi-disc me-2"></i>ISO 이미지</a></li>
+            <li><a class="dropdown-item" href="/tools/dmg"><i class="bi bi-hdd-fill me-2"></i>macOS DMG</a></li>
+            <li><a class="dropdown-item" href="/tools/rar"><i class="bi bi-file-zip me-2"></i>RAR</a></li>
+            <li><a class="dropdown-item" href="/tools/sevenz"><i class="bi bi-file-earmark-zip me-2"></i>7-Zip</a></li>
+            <li><a class="dropdown-item" href="/tools/tar"><i class="bi bi-archive me-2"></i>TAR</a></li>
+            <li><a class="dropdown-item" href="/tools/cab"><i class="bi bi-file-earmark-binary me-2"></i>CAB</a></li>
+            <li><a class="dropdown-item" href="/tools/gzmeta"><i class="bi bi-file-zip-fill me-2"></i>GZIP 메타</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">🏆 유료 도구급</h6></li>
+            <li><a class="dropdown-item text-warning" href="/tools/vol-full"><i class="bi bi-cpu-fill me-2"></i>Volatility 풀 분석 <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/aleapp"><i class="bi bi-android2 me-2"></i>ALEAPP (Android) <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/ileapp"><i class="bi bi-phone me-2"></i>iLEAPP (iOS) <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/e01-mount"><i class="bi bi-hdd-rack-fill me-2"></i>E01 / EnCase 분석 <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/mft-full"><i class="bi bi-list-columns-reverse me-2"></i>MFT 풀 파싱 <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/hashcat-job"><i class="bi bi-shield-lock me-2"></i>Hashcat 크래킹 <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">PRO</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/llm-report"><i class="bi bi-robot me-2"></i>LLM 자동 보고서 <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">AI</span></a></li>
+            <li><a class="dropdown-item" href="/tools/coc"><i class="bi bi-link-45deg me-2 text-accent"></i>Chain of Custody</a></li>
+            <li><a class="dropdown-item" href="/tools/jobs"><i class="bi bi-cpu me-2"></i>백그라운드 작업</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">자동·통합</h6></li>
+            <li><a class="dropdown-item text-accent" href="/tools/auto"><i class="bi bi-magic me-2"></i>자동 분류 라우터</a></li>
+            <li><a class="dropdown-item text-accent" href="/tools/autoanalyze"><i class="bi bi-magic me-2"></i>자동 분석</a></li>
+            <li><a class="dropdown-item" href="/tools/zipsearch"><i class="bi bi-search me-2"></i>ZIP 내부 검색</a></li>
+            <li><a class="dropdown-item" href="/tools/triagediff"><i class="bi bi-files me-2"></i>트리아지 ZIP 비교</a></li>
+            <li><a class="dropdown-item" href="/tools/report-pdf"><i class="bi bi-file-earmark-pdf me-2"></i>PDF 보고서</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><h6 class="dropdown-header text-dim">유틸리티</h6></li>
+            <li><a class="dropdown-item" href="/tools/encoding"><i class="bi bi-translate me-2"></i>인코딩 변환</a></li>
+            <li><a class="dropdown-item" href="/tools/markdown"><i class="bi bi-markdown me-2"></i>Markdown 렌더</a></li>
+            <li><a class="dropdown-item" href="/tools/time"><i class="bi bi-clock-history me-2"></i>시간 변환기</a></li>
+            <li><a class="dropdown-item" href="/tools/magic"><i class="bi bi-tag-fill me-2"></i>매직바이트</a></li>
+            <li><a class="dropdown-item" href="/tools/hex"><i class="bi bi-code me-2"></i>Hex Viewer</a></li>
+            <li><a class="dropdown-item" href="/tools/regex"><i class="bi bi-regex me-2"></i>정규식 테스터</a></li>
+            <li><a class="dropdown-item" href="/tools/convert"><i class="bi bi-arrow-left-right me-2"></i>JSON / XML / YAML</a></li>
+            <li><a class="dropdown-item" href="/tools/textdiff"><i class="bi bi-file-diff me-2"></i>텍스트 Diff</a></li>
+            <li><a class="dropdown-item" href="/tools/spreadsheet"><i class="bi bi-table me-2"></i>CSV / Excel 뷰어</a></li>
+            <li><a class="dropdown-item" href="/tools/wordlist"><i class="bi bi-list-ol me-2"></i>Wordlist 생성</a></li>
+            <li><a class="dropdown-item" href="/tools/docker"><i class="bi bi-box-fill me-2"></i>Docker 이미지</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><a class="dropdown-item" href="/tools/triage"><i class="bi bi-box-seam-fill me-2 text-accent"></i>트리아지 ZIP 분석 <span class="badge bg-info ms-1" style="font-size:.62rem">New</span></a></li>
+            <li><a class="dropdown-item text-warning" href="/tools/scripts"><i class="bi bi-download me-2"></i>로컬 스크립트 <span class="badge bg-warning text-dark ms-1" style="font-size:.62rem">Local</span></a></li>
+            <li><a class="dropdown-item" href="/tools/verify"><i class="bi bi-shield-check me-2 text-accent"></i>체크섬 검증</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><a class="dropdown-item" href="/tools/history"><i class="bi bi-archive me-2"></i>분석 이력</a></li>
+          </ul>
+        </li>
+        {% if session.get('username') %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>{{ session.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+            <li><a class="dropdown-item" href="/mypage"><i class="bi bi-person me-2"></i>마이페이지</a></li>
+            <li><a class="dropdown-item" href="/tools/history"><i class="bi bi-archive me-2"></i>내 분석 이력</a></li>
+            <li><hr class="dropdown-divider" style="border-color:#1a2744"></li>
+            <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>로그아웃</a></li>
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item"><a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i>로그인</a></li>
+        <li class="nav-item"><a class="btn btn-accent btn-sm px-3" href="/signup">시작하기</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

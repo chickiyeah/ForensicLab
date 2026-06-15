@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">위협 인텔리전스</span></div>
+<h1 class="page-title"><i class="bi bi-radar me-2 text-accent"></i>위협 인텔리전스</h1>
+<p class="page-sub">VirusTotal·AbuseIPDB IoC 조회</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST">
+<label class="form-label-sm">IOC (IP / 해시 / 도메인)</label>
+<input type="text" name="ioc" class="form-control mb-3" required>
+<label class="form-label-sm">VirusTotal API 키 (선택)</label>
+<input type="password" name="vt_key" class="form-control mb-3">
+<label class="form-label-sm">AbuseIPDB API 키 (선택)</label>
+<input type="password" name="abuseip_key" class="form-control mb-3">
+<button class="btn btn-accent w-100"><i class="bi bi-radar me-1"></i>조회</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}
+<div class="tool-panel mb-2"><strong>IOC:</strong> <code>{{ result.ioc }}</code>
+<span class="tag ms-2">{{ result.ioc_type }}</span></div>
+{% for src, data in result.sources.items() %}
+<div class="tool-panel mb-2"><h6 class="panel-title">{{ src }}</h6>
+{% if data.error %}<div class="text-danger">{{ data.error }}</div>
+{% else %}<table class="table table-sm" style="font-size:.84rem;">
+{% for k, v in data.items() %}<tr><td class="text-dim">{{ k }}</td>
+<td>{% if v is iterable and v is not string %}{% for x in v %}<code class="me-1">{{ x }}</code>{% endfor %}{% else %}<code>{{ v }}</code>{% endif %}</td></tr>{% endfor %}
+</table>{% endif %}</div>{% endfor %}
+{% endif %}</div></div></div>{% endblock %}

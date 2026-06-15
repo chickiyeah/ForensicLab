@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">HTTP 보안 헤더</span></div>
+<h1 class="page-title"><i class="bi bi-shield-check me-2 text-accent"></i>HTTP 보안 헤더</h1>
+<p class="page-sub">URL → HSTS·CSP·X-Frame·X-Content-Type 등 보안 헤더 채점.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel mb-3"><form method="POST">
+<input type="text" name="url" class="form-control mb-3" placeholder="https://example.com" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-shield-check me-1"></i>검사</button>
+</form></div>
+{% if result %}<div class="tool-panel mb-3" style="border:2px solid var(--accent);">
+<div class="text-center"><div style="font-size:3rem; font-weight:700; color:{% if result.grade == 'A+' or result.grade == 'A' %}#22c55e{% elif result.grade == 'B' %}#f59e0b{% else %}#ef4444{% endif %};">{{ result.grade }}</div>
+<div class="text-dim small">점수 {{ result.score }}/100 · HTTP {{ result.status }}</div></div></div>
+<div class="tool-panel mb-2"><h6 class="panel-title">보안 헤더</h6>
+<table class="table table-sm" style="font-size:.82rem;"><tbody>
+{% for c in result.checks %}<tr>
+<td style="width:30px;">{% if c.present %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}</td>
+<td><strong>{{ c.name }}</strong><br><span class="text-dim small">{{ c.desc }}</span></td>
+<td><code style="font-size:.72rem; word-break:break-all;">{{ c.value or '(없음)' }}</code></td>
+</tr>{% endfor %}</tbody></table></div>
+{% if result.cookie_flags %}<div class="tool-panel"><strong>쿠키 플래그:</strong>
+{% for f in result.cookie_flags %}<span class="tag me-1">{{ f }}</span>{% endfor %}</div>{% endif %}
+{% endif %}
+</div></div></div>{% endblock %}

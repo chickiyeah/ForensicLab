@@ -1,0 +1,53 @@
+{% extends 'base.html' %}{% block content %}
+{% set sevcolor = {'critical':'#ef4444','high':'#f59e0b','medium':'#06b6d4','low':'#6b7280'} %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/tools/honeytrap" class="text-dim text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>허니트랩</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">{{ s.ip }}</span></div>
+<h1 class="page-title"><i class="bi bi-fingerprint me-2 text-accent"></i>공격자 프로파일</h1>
+<p class="page-sub">{{ s.ip }} — <span style="color:{{ sevcolor[s.severity] }}">{{ s.actor }}</span></p></div></div>
+
+<div class="container pb-5">
+  <div class="row g-3 mb-3">
+    <div class="col-md-8"><div class="tool-panel h-100">
+      <h6 class="text-accent">판정 근거</h6>
+      <table class="table table-sm table-dark mb-2">
+        <tr><td style="width:140px" class="text-dim">행위자</td><td><b>{{ s.actor }}</b> {% if s.canary %}<span class="badge bg-danger ms-1"><i class="bi bi-flag-fill"></i> 카나리 트립</span>{% endif %}</td></tr>
+        <tr><td class="text-dim">심각도</td><td><span class="badge" style="background:{{ sevcolor[s.severity] }}">{{ s.severity }}</span></td></tr>
+        <tr><td class="text-dim">총 히트</td><td>{{ s.hits }}</td></tr>
+        <tr><td class="text-dim">행위 종류</td><td>{% for r in s.reasons %}<span class="badge bg-secondary me-1">{{ r }}</span>{% endfor %}</td></tr>
+        <tr><td class="text-dim">최초/최근</td><td class="small">{{ s.first }} → {{ s.last }}</td></tr>
+        <tr><td class="text-dim">User-Agent</td><td>{% for u in s.uas %}<div style="font-family:monospace;font-size:.72rem">{{ u }}</div>{% endfor %}</td></tr>
+      </table>
+      {% if s.canary %}<div class="alert-error mt-2"><i class="bi bi-robot me-1"></i><b>AI 에이전트 확정</b> — 디코이 페이지에 숨긴 프롬프트 인젝션 지시(사람 눈엔 비표시)를 이해하고 카나리 URL을 따라옴. 사람·일반 스캐너로는 불가능한 행위.</div>{% endif %}
+    </div></div>
+    <div class="col-md-4"><div class="tool-panel h-100">
+      <h6 class="text-accent">접근 경로</h6>
+      <div style="max-height:240px;overflow:auto">
+      {% for p in s.paths %}<div style="font-family:monospace;font-size:.72rem" class="mb-1"><i class="bi bi-dot"></i>{{ p }}</div>{% endfor %}
+      </div>
+    </div></div>
+  </div>
+
+  <div class="tool-panel">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="text-accent mb-0">이벤트 타임라인 ({{ s.events|length }})</h6>
+      <a href="/tools/honeytrap/export" class="btn btn-sm btn-outline-info"><i class="bi bi-download me-1"></i>CoC 증거 export</a>
+    </div>
+    <div style="max-height:560px;overflow:auto">
+    <table class="table table-sm table-dark">
+      <thead><tr><th>시각(UTC)</th><th>종류</th><th>심각도</th><th>경로</th><th>상세</th></tr></thead>
+      <tbody>
+      {% for e in s.events|reverse %}
+      <tr>
+        <td class="text-dim small" style="white-space:nowrap">{{ e.ts.split('T')[1][:12] if 'T' in e.ts else e.ts }}</td>
+        <td><span class="badge bg-secondary">{{ e.kind }}</span></td>
+        <td><span class="badge" style="background:{{ sevcolor[e.severity] }}">{{ e.severity }}</span></td>
+        <td style="font-family:monospace;font-size:.7rem">{{ e.path }}</td>
+        <td class="text-dim" style="font-size:.7rem">{{ e.detail }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="mt-3"><a href="/tools/honeytrap" class="btn btn-outline-secondary btn-sm">← 목록</a></div>
+</div>{% endblock %}

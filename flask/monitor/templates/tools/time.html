@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">시간 변환기</span></div>
+<h1 class="page-title"><i class="bi bi-clock-history me-2 text-accent"></i>시간 변환기</h1>
+<p class="page-sub">Unix·FILETIME·Chrome·Cocoa·DOS·HFS·Mozilla 등 모든 포렌식 타임스탬프 변환.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="tool-panel mb-3"><form method="POST">
+<label class="form-label-sm">시각 값 (정수 또는 ISO 날짜)</label>
+<input type="text" name="value" class="form-control mb-3" placeholder="1717250000 또는 2026-06-01 12:34:56" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-arrow-left-right me-1"></i>변환</button>
+</form></div>
+{% if result %}<div class="tool-panel"><h6 class="panel-title">입력 <code>{{ result.input }}</code> — {{ result.results|length }}개</h6>
+<table class="table table-sm" style="font-size:.85rem;"><tbody>
+{% for r in result.results %}<tr><td class="text-dim">{{ r.format }}</td><td><code>{{ r.value }}</code></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+</div></div></div>{% endblock %}

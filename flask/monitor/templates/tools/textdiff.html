@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">텍스트 Diff</span></div>
+<h1 class="page-title"><i class="bi bi-file-diff me-2 text-accent"></i>텍스트 Diff</h1>
+<p class="page-sub">두 텍스트 라인별 unified diff.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<form method="POST"><div class="row g-3 mb-3">
+<div class="col-md-6"><label class="form-label-sm">A</label>
+<textarea name="text_a" class="form-control" rows="12" style="font-family:monospace; font-size:.74rem;">{{ a }}</textarea></div>
+<div class="col-md-6"><label class="form-label-sm">B</label>
+<textarea name="text_b" class="form-control" rows="12" style="font-family:monospace; font-size:.74rem;">{{ b }}</textarea></div>
+</div><button class="btn btn-accent"><i class="bi bi-file-diff me-1"></i>비교</button></form>
+{% if result %}<div class="tool-panel mt-3">
+<h6 class="panel-title">유사도 {{ result.similarity }}% · A {{ result.lines_a }}행 / B {{ result.lines_b }}행</h6>
+<pre style="background:var(--bg); padding:.6rem; font-size:.78rem; max-height:500px; overflow:auto; margin:0;">{% for line in result.diff %}{% if line.startswith('+') %}<span style="color:#22c55e">{{ line }}</span>{% elif line.startswith('-') %}<span style="color:#ef4444">{{ line }}</span>{% elif line.startswith('@') %}<span style="color:#06b6d4">{{ line }}</span>{% else %}{{ line }}{% endif %}
+{% endfor %}</pre></div>{% endif %}</div>{% endblock %}

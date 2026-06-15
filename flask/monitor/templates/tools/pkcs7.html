@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">PKCS#7 / CMS</span></div>
+<h1 class="page-title"><i class="bi bi-collection me-2 text-accent"></i>PKCS#7 / CMS</h1>
+<p class="page-sub">인증서 번들·서명된 메시지</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required><button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }} — {{ result.cert_count }}개 인증서</h6>
+{% for c in result.certificates %}<div class="p-2 mb-1" style="background:var(--bg);">
+<div><strong>Subject:</strong> <code>{{ c.subject }}</code></div>
+<div><strong>Issuer:</strong> <code>{{ c.issuer }}</code></div>
+<div><strong>Serial:</strong> <code>{{ c.serial }}</code></div>
+</div>{% endfor %}</div>{% endif %}</div>{% endblock %}

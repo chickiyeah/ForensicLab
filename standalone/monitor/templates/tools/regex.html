@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">정규식 테스터</span></div>
+<h1 class="page-title"><i class="bi bi-regex me-2 text-accent"></i>정규식 테스터</h1>
+<p class="page-sub">매칭·그룹·치환 미리보기 + 플래그.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST">
+<input type="text" name="pattern" class="form-control mb-2" style="font-family:monospace;" value="{{ pattern }}" placeholder="패턴">
+<div class="d-flex gap-2 mb-2 small">
+<label><input type="checkbox" name="flags" value="i" {% if 'i' in flags %}checked{% endif %}> i</label>
+<label><input type="checkbox" name="flags" value="m" {% if 'm' in flags %}checked{% endif %}> m</label>
+<label><input type="checkbox" name="flags" value="s" {% if 's' in flags %}checked{% endif %}> s</label>
+</div>
+<textarea name="text" class="form-control mb-2" rows="10" style="font-family:monospace; font-size:.74rem;">{{ text }}</textarea>
+<input type="text" name="replace" class="form-control mb-3" style="font-family:monospace;" placeholder="치환 (\1, \2 사용)">
+<button class="btn btn-accent w-100"><i class="bi bi-play me-1"></i>실행</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}
+<div class="tool-panel mb-2"><h6 class="panel-title">매칭 {{ result.match_count }}건</h6>
+<div style="max-height:400px; overflow-y:auto;">{% for m in result.matches %}
+<div class="p-2 mb-1" style="background:var(--bg); font-size:.78rem;">
+<code style="color:var(--accent)">{{ m.match }}</code> <span class="text-dim small">@ {{ m.span[0] }}-{{ m.span[1] }}</span>
+{% if m.groups %}<div class="text-dim small">그룹: {% for g in m.groups %}<code class="me-2">{{ g }}</code>{% endfor %}</div>{% endif %}
+</div>{% endfor %}</div></div>
+{% if result.substituted %}<div class="tool-panel"><h6 class="panel-title">치환 결과</h6>
+<pre style="background:var(--bg); padding:.5rem; font-size:.78rem; max-height:300px; overflow:auto;">{{ result.substituted }}</pre></div>{% endif %}
+{% endif %}</div></div></div>{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">IOC 추출기</span></div>
+<h1 class="page-title"><i class="bi bi-search me-2 text-accent"></i>IOC 추출기</h1>
+<p class="page-sub">IP·도메인·해시·CVE·BTC·이메일·CIDR·MAC·경로·레지스트리 키 자동 추출.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<label class="form-label-sm">텍스트</label>
+<textarea name="text" class="form-control mb-2" rows="10" style="font-family:monospace; font-size:.74rem;"></textarea>
+<label class="form-label-sm">또는 파일들 (다중)</label>
+<input type="file" name="file" class="form-control mb-3" multiple>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>추출</button>
+</form></div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">총 {{ result.total }}건</h6>
+{% for k, vs in result.iocs.items() %}{% if vs %}<div class="mb-3">
+<strong style="color:var(--accent); text-transform:uppercase;">{{ k }} ({{ vs|length }})</strong>
+<div style="font-family:monospace; font-size:.78rem; max-height:200px; overflow-y:auto; margin-top:.3rem; background:var(--bg); padding:.4rem; border-radius:.3rem;">
+{% for v in vs %}<div style="padding:.1rem 0; word-break:break-all;">{{ v }}</div>{% endfor %}
+</div></div>{% endif %}{% endfor %}
+</div>{% endif %}</div></div></div>{% endblock %}

@@ -1,4 +1,4 @@
-import os, io, struct, hashlib, hmac as _hmac_mod, zipfile, re, tempfile, subprocess, json as _json, stat
+﻿import os, io, struct, hashlib, hmac as _hmac_mod, zipfile, re, tempfile, subprocess, json as _json, stat
 import email as _email_mod
 from email.parser import BytesParser
 from email import policy as _email_policy
@@ -330,8 +330,8 @@ def index():
 # ─────────────────────────────────────────────────────────────────────────────
 def _save_log(tool, tool_label, filename, file_size, summary, result=None):
     try:
-        from hospital import db as _db
-        from hospital.models import AnalysisLog
+        from monitor import db as _db
+        from monitor.models import AnalysisLog
         result_json = None
         if result is not None:
             try:
@@ -1818,7 +1818,7 @@ def mbr_repair():
 @bp.route('/history')
 def history():
     try:
-        from hospital.models import AnalysisLog
+        from monitor.models import AnalysisLog
         logs = AnalysisLog.query.order_by(AnalysisLog.created.desc()).limit(200).all()
     except Exception:
         logs = []
@@ -1827,7 +1827,7 @@ def history():
 
 @bp.route('/share/<token>')
 def share_view(token):
-    from hospital.models import AnalysisLog
+    from monitor.models import AnalysisLog
     log = AnalysisLog.query.filter_by(share_token=token).first_or_404()
     result = None
     if log.result_json:
@@ -1840,7 +1840,7 @@ def share_view(token):
 
 @bp.route('/report/<token>')
 def report(token):
-    from hospital.models import AnalysisLog
+    from monitor.models import AnalysisLog
     log = AnalysisLog.query.filter_by(share_token=token).first_or_404()
     result = None
     if log.result_json:
@@ -1905,7 +1905,7 @@ def timeline_tool():
                 # LNK 바이너리 (Windows 바로가기)
                 elif data[:4] == b'\x4C\x00\x00\x00':
                     try:
-                        from hospital.views.tools_extra import _parse_lnk
+                        from monitor.views.tools_extra import _parse_lnk
                         r = _parse_lnk(data, fname)
                         for k, label in [('create_time','LNK 대상 생성'),
                                          ('write_time','LNK 대상 수정'),
@@ -1921,7 +1921,7 @@ def timeline_tool():
                 # Prefetch (Windows 실행 추적)
                 elif data[:3] == b'MAM' or data[4:8] == b'SCCA':
                     try:
-                        from hospital.views.tools_extra import _parse_prefetch
+                        from monitor.views.tools_extra import _parse_prefetch
                         r = _parse_prefetch(data, fname)
                         for t in r.get('last_runs', []):
                             all_events.append({
@@ -3019,25 +3019,25 @@ def registry_tool():
 
 # 확장 분석 도구 (별도 모듈로 분리)
 # PE/ELF/Mach-O · 엔트로피 · 다중 디코더 · Prefetch · LNK · 디스크 이미지 · 스크립트 허브
-from hospital.views import tools_extra  # noqa: E402, F401
+from monitor.views import tools_extra  # noqa: E402, F401
 # 추가 20종 도구 (EVTX·SQLite·JumpList·VBA·PDF·JWT·X509·YARA·HexDiff·Secret·ESEDB·
 #                   MFT·EmailAuth·DNS·Stego·QR·OCR·WHOIS·Passwd·Git)
-from hospital.views import tools_extra2  # noqa: E402, F401
+from monitor.views import tools_extra2  # noqa: E402, F401
 # 3차 확장 30종 (Plist·AmCache·HAR·Sigma·PSDeobf·IOC·시간·APK·해시룩업·HEIF·MemScan·
 # Cuckoo·Vol·Magic·Docker·Hex·CIDR·Convert·Regex·JSDeobf·Wordlist·Spreadsheet·
 # TextDiff·CVE·PHash·dmesg·iOS·WhatsApp·Telegram·PST)
-from hospital.views import tools_extra3  # noqa: E402, F401
+from monitor.views import tools_extra3  # noqa: E402, F401
 # 4차 확장 71종 (HTTP보안·TLS·포트스캔·DNS·다중해시·서명·자동라우터·PDF·모바일11·브라우저캐시·macOS7·클라우드10·악성8·압축7·암호5·유틸9)
-from hospital.views import tools_extra4  # noqa: E402, F401
+from monitor.views import tools_extra4  # noqa: E402, F401
 # 5차: 유료 도구 대결 — Volatility·CoC·LLM·백그라운드·Hashcat·ALEAPP·iLEAPP·E01·MFT
-from hospital.views import tools_extra5  # noqa: E402, F401
+from monitor.views import tools_extra5  # noqa: E402, F401
 # 6차: 엔터프라이즈 — 사건관리·검색·대시보드·PDF·ATT&CK·위협인텔·AI·Plaso·OCR인덱싱·얼굴인식
-from hospital.views import tools_extra6  # noqa: E402, F401
+from monitor.views import tools_extra6  # noqa: E402, F401
 # 7차: 도구별 도움말·사용법 + 컨텍스트 프로세서
-from hospital.views import tools_extra7  # noqa: E402, F401
+from monitor.views import tools_extra7  # noqa: E402, F401
 # 8차: 포렌식 가이드 — 핵심 경로·초보자 시나리오·용어집
-from hospital.views import tools_extra8  # noqa: E402, F401
+from monitor.views import tools_extra8  # noqa: E402, F401
 # 9차: 암호화 해제 — BitLocker·LUKS·VeraCrypt·암호 ZIP/Office/PDF 복호화 + 크래킹
-from hospital.views import tools_extra9  # noqa: E402, F401
+from monitor.views import tools_extra9  # noqa: E402, F401
 # 10차: AI 침입자 허니트랩 — LLM 에이전트 탐지·차단·박제 (프롬프트 인젝션 카나리)
-from hospital.views import tools_extra10  # noqa: E402, F401
+from monitor.views import tools_extra10  # noqa: E402, F401

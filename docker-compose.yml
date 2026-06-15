@@ -4,6 +4,7 @@ services:
     container_name: forensic-flask
     restart: unless-stopped
     privileged: true
+    command: ["gunicorn", "--config", "/app/gunicorn.conf.py", "monitor:create_app()"]
     volumes:
       - ./flask:/app
     environment:

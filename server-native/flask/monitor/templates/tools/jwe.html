@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">JWE / JWS 디코더</span></div>
+<h1 class="page-title"><i class="bi bi-key-fill me-2 text-accent"></i>JWE / JWS 디코더</h1>
+<p class="page-sub">5-part JWE 또는 3-part JWS 분해</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel"><form method="POST">
+<textarea name="token" class="form-control mb-3" rows="8" style="font-family:monospace; font-size:.74rem;" placeholder="eyJ...">{{ token }}</textarea>
+<button class="btn btn-accent w-100">디코드</button></form></div>
+{% if result %}<div class="tool-panel mt-3"><h6 class="panel-title">{{ result.format }}</h6>
+{% for k, v in result.items() %}{% if k != 'format' %}
+<div><strong>{{ k }}:</strong>{% if v is mapping %}<pre style="background:var(--bg); padding:.4rem; font-size:.72rem;">{{ v | tojson(indent=2) }}</pre>
+{% else %} <code style="word-break:break-all;">{{ v }}</code>{% endif %}</div>{% endif %}{% endfor %}
+</div>{% endif %}</div></div></div>{% endblock %}

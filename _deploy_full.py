@@ -1,4 +1,4 @@
-"""전체 배포 스크립트 - 새 서버 10.8.0.17"""
+﻿"""전체 배포 스크립트 - 새 서버 10.8.0.17"""
 import paramiko, os
 
 HOST, USER, PASS = '10.8.0.17', 'ruddls030', 'dlstn0722'
@@ -42,16 +42,16 @@ def up(local_rel, remote_rel):
 for d in [
     f'{BASE_REMOTE}/config',
     f'{BASE_REMOTE}/data',
-    f'{BASE_REMOTE}/hospital',
-    f'{BASE_REMOTE}/hospital/views',
-    f'{BASE_REMOTE}/hospital/templates',
-    f'{BASE_REMOTE}/hospital/templates/tools',
-    f'{BASE_REMOTE}/hospital/templates/monitor',
-    f'{BASE_REMOTE}/hospital/static',
-    f'{BASE_REMOTE}/hospital/static/css',
-    f'{BASE_REMOTE}/hospital/static/js',
-    f'{BASE_REMOTE}/hospital/static/uploads',
-    f'{BASE_REMOTE}/hospital/static/tools',
+    f'{BASE_REMOTE}/monitor',
+    f'{BASE_REMOTE}/monitor/views',
+    f'{BASE_REMOTE}/monitor/templates',
+    f'{BASE_REMOTE}/monitor/templates/tools',
+    f'{BASE_REMOTE}/monitor/templates/monitor',
+    f'{BASE_REMOTE}/monitor/static',
+    f'{BASE_REMOTE}/monitor/static/css',
+    f'{BASE_REMOTE}/monitor/static/js',
+    f'{BASE_REMOTE}/monitor/static/uploads',
+    f'{BASE_REMOTE}/monitor/static/tools',
     f'{BASE_REMOTE}/migrations',
 ]:
     mkdir_p(d)
@@ -75,7 +75,7 @@ wr(f'{BASE_REMOTE}/gunicorn.conf.py',
 """bind = '0.0.0.0:5000'
 workers = 1
 reload = True
-reload_extra_files = ['hospital/templates', 'hospital/static/css/my.css']
+reload_extra_files = ['monitor/templates', 'monitor/static/css/my.css']
 """)
 
 # ── config/ ───────────────────────────────────────────
@@ -97,8 +97,8 @@ DEBUG = True
 """)
 print('[2/6] Config files OK')
 
-# ── hospital/__init__.py ──────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/__init__.py',
+# ── monitor/__init__.py ──────────────────────────────
+wr(f'{BASE_REMOTE}/monitor/__init__.py',
 """from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -119,9 +119,9 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from hospital.views.main import bp as main_bp
-    from hospital.views.tools import bp as tools_bp
-    from hospital.views.monitor import bp as monitor_bp
+    from monitor.views.main import bp as main_bp
+    from monitor.views.tools import bp as tools_bp
+    from monitor.views.monitor import bp as monitor_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(tools_bp)
@@ -130,9 +130,9 @@ def create_app():
     return app
 """)
 
-# ── hospital/models.py ────────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/models.py',
-"""from hospital import db
+# ── monitor/models.py ────────────────────────────────
+wr(f'{BASE_REMOTE}/monitor/models.py',
+"""from monitor import db
 from datetime import datetime
 from sqlalchemy import Numeric
 import uuid
@@ -168,8 +168,8 @@ class AnalysisLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 """)
 
-# ── hospital/forms.py ─────────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/forms.py',
+# ── monitor/forms.py ─────────────────────────────────
+wr(f'{BASE_REMOTE}/monitor/forms.py',
 """from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField
 from wtforms.validators import DataRequired, Email, Length, EqualTo
@@ -187,15 +187,15 @@ class SignupForm(FlaskForm):
     confirm = PasswordField('비밀번호 확인', validators=[EqualTo('password')])
 """)
 
-# ── hospital/views/__init__.py ────────────────────────
-wr(f'{BASE_REMOTE}/hospital/views/__init__.py', '')
+# ── monitor/views/__init__.py ────────────────────────
+wr(f'{BASE_REMOTE}/monitor/views/__init__.py', '')
 
-# ── hospital/views/main.py ────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/views/main.py',
+# ── monitor/views/main.py ────────────────────────────
+wr(f'{BASE_REMOTE}/monitor/views/main.py',
 """from flask import Blueprint, render_template, request, url_for, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
-from hospital.models import User
-from hospital import db
+from monitor.models import User
+from monitor import db
 
 bp = Blueprint('main', __name__, url_prefix='/')
 
@@ -266,11 +266,11 @@ def logout():
     return redirect(url_for('main.index'))
 """)
 
-# ── hospital/views/monitor.py ─────────────────────────
-wr(f'{BASE_REMOTE}/hospital/views/monitor.py',
+# ── monitor/views/monitor.py ─────────────────────────
+wr(f'{BASE_REMOTE}/monitor/views/monitor.py',
 """from flask import Blueprint, render_template, request, jsonify
-from hospital.models import Sensor
-from hospital import db
+from monitor.models import Sensor
+from monitor import db
 
 bp = Blueprint('monitor', __name__, url_prefix='/monitor')
 
@@ -305,7 +305,7 @@ def sensor_api():
 print('[3/6] Python source files OK')
 
 # ── 센서 모니터링 템플릿 ──────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/templates/monitor/sensor.html',
+wr(f'{BASE_REMOTE}/monitor/templates/monitor/sensor.html',
 """{% extends 'base.html' %}
 {% block content %}
 <div class="page-hero">
@@ -346,7 +346,7 @@ wr(f'{BASE_REMOTE}/hospital/templates/monitor/sensor.html',
 """)
 
 # ── static/js/scripts.js ──────────────────────────────
-wr(f'{BASE_REMOTE}/hospital/static/js/scripts.js',
+wr(f'{BASE_REMOTE}/monitor/static/js/scripts.js',
 """function copyShareLink(token) {
   navigator.clipboard.writeText(location.origin + '/tools/share/' + token).then(function() {
     var btn = event.currentTarget;
@@ -361,29 +361,29 @@ print('[4/6] Inline templates & JS OK')
 # ── 로컬 파일 업로드 ──────────────────────────────────
 local_to_remote = [
     (r'Dockerfile',                          'Dockerfile'),
-    (r'views\tools.py',                      'hospital/views/tools.py'),
-    (r'templates\base.html',                 'hospital/templates/base.html'),
-    (r'templates\navbar.html',               'hospital/templates/navbar.html'),
-    (r'templates\index.html',                'hospital/templates/index.html'),
-    (r'templates\intro.html',                'hospital/templates/intro.html'),
-    (r'templates\login.html',                'hospital/templates/login.html'),
-    (r'templates\signup.html',               'hospital/templates/signup.html'),
-    (r'templates\tools\index.html',          'hospital/templates/tools/index.html'),
-    (r'templates\tools\hash.html',           'hospital/templates/tools/hash.html'),
-    (r'templates\tools\carve.html',          'hospital/templates/tools/carve.html'),
-    (r'templates\tools\mbr.html',            'hospital/templates/tools/mbr.html'),
-    (r'templates\tools\mbr_repair.html',     'hospital/templates/tools/mbr_repair.html'),
-    (r'templates\tools\strings.html',        'hospital/templates/tools/strings.html'),
-    (r'templates\tools\log.html',            'hospital/templates/tools/log.html'),
-    (r'templates\tools\gps.html',            'hospital/templates/tools/gps.html'),
-    (r'templates\tools\metadata.html',       'hospital/templates/tools/metadata.html'),
-    (r'templates\tools\timeline.html',       'hospital/templates/tools/timeline.html'),
-    (r'templates\tools\pcap.html',           'hospital/templates/tools/pcap.html'),
-    (r'templates\tools\history.html',        'hospital/templates/tools/history.html'),
-    (r'templates\tools\share.html',          'hospital/templates/tools/share.html'),
-    (r'templates\tools\report.html',         'hospital/templates/tools/report.html'),
-    (r'static\css\my.css',                   'hospital/static/css/my.css'),
-    (r'static\tools\forensiclab_mbr_repair.py', 'hospital/static/tools/forensiclab_mbr_repair.py'),
+    (r'views\tools.py',                      'monitor/views/tools.py'),
+    (r'templates\base.html',                 'monitor/templates/base.html'),
+    (r'templates\navbar.html',               'monitor/templates/navbar.html'),
+    (r'templates\index.html',                'monitor/templates/index.html'),
+    (r'templates\intro.html',                'monitor/templates/intro.html'),
+    (r'templates\login.html',                'monitor/templates/login.html'),
+    (r'templates\signup.html',               'monitor/templates/signup.html'),
+    (r'templates\tools\index.html',          'monitor/templates/tools/index.html'),
+    (r'templates\tools\hash.html',           'monitor/templates/tools/hash.html'),
+    (r'templates\tools\carve.html',          'monitor/templates/tools/carve.html'),
+    (r'templates\tools\mbr.html',            'monitor/templates/tools/mbr.html'),
+    (r'templates\tools\mbr_repair.html',     'monitor/templates/tools/mbr_repair.html'),
+    (r'templates\tools\strings.html',        'monitor/templates/tools/strings.html'),
+    (r'templates\tools\log.html',            'monitor/templates/tools/log.html'),
+    (r'templates\tools\gps.html',            'monitor/templates/tools/gps.html'),
+    (r'templates\tools\metadata.html',       'monitor/templates/tools/metadata.html'),
+    (r'templates\tools\timeline.html',       'monitor/templates/tools/timeline.html'),
+    (r'templates\tools\pcap.html',           'monitor/templates/tools/pcap.html'),
+    (r'templates\tools\history.html',        'monitor/templates/tools/history.html'),
+    (r'templates\tools\share.html',          'monitor/templates/tools/share.html'),
+    (r'templates\tools\report.html',         'monitor/templates/tools/report.html'),
+    (r'static\css\my.css',                   'monitor/static/css/my.css'),
+    (r'static\tools\forensiclab_mbr_repair.py', 'monitor/static/tools/forensiclab_mbr_repair.py'),
 ]
 
 BASE_LOCAL = r'E:\forensic'
@@ -406,9 +406,9 @@ sftp.close()
 print('[6/6] Rebuilding Docker...')
 cmd = (
     'cd /home/ruddls030/forensic && '
-    'docker-compose down && '
-    'docker-compose build flask && '
-    'docker-compose up -d'
+    'docker compose down && '
+    'docker compose build flask && '
+    'docker compose up -d'
 )
 _, o, e = ssh.exec_command(cmd, timeout=300)
 stdout = o.read().decode()
@@ -427,11 +427,11 @@ print('Running db init + upgrade...')
 _, o2, e2 = ssh.exec_command(
     'cd /home/ruddls030/forensic && '
     'docker-compose exec -T forensic-flask '
-    'flask --app "hospital:create_app()" db init 2>&1 || true && '
+    'flask --app "monitor:create_app()" db init 2>&1 || true && '
     'docker-compose exec -T forensic-flask '
-    'flask --app "hospital:create_app()" db migrate -m "init" 2>&1 || true && '
+    'flask --app "monitor:create_app()" db migrate -m "init" 2>&1 || true && '
     'docker-compose exec -T forensic-flask '
-    'flask --app "hospital:create_app()" db upgrade 2>&1',
+    'flask --app "monitor:create_app()" db upgrade 2>&1',
     timeout=120
 )
 out2 = o2.read().decode()

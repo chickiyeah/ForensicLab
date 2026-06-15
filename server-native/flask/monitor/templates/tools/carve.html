@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">파일 카빙</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-file-earmark-binary me-2 text-accent"></i>파일 카빙</h1>
+    <p class="page-sub">RAW 이미지에서 파일 시그니처를 탐색하여 삭제된 파일을 복구합니다. (최대 200 MB)</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>입력</h6>
+        <form method="POST" enctype="multipart/form-data">
+
+          <div class="mb-3">
+            <label class="form-label-sm">디스크 이미지 / 바이너리 파일</label>
+            <input type="file" name="file" multiple class="form-control" required>
+            <div class="form-hint">.001 .img .dd .raw .bin 등</div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-sm">탐색할 파일 형식</label>
+            <div class="d-flex flex-column gap-2 mt-1">
+              {% for key, sig in signatures.items() %}
+              <label class="check-pill">
+                <input type="checkbox" name="types" value="{{ key }}" checked>
+                {{ sig.label }}
+                <code class="ms-1 small">{{ sig.headers[0][:4].hex().upper() }}</code>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-search me-1"></i>카빙 시작
+          </button>
+        </form>
+      </div>
+
+      <div class="info-box mt-3">
+        <h6><i class="bi bi-info-circle me-2"></i>파일 시그니처란?</h6>
+        <p>모든 파일 포맷은 고유한 매직 바이트(헤더/푸터)를 가집니다. 파일 시스템이 손상되어도 이 바이트 패턴이 남아있으면 복구가 가능합니다.</p>
+        <ul class="sig-list">
+          <li><code>GIF89a / GIF87a</code> → GIF</li>
+          <li><code>FF D8 FF</code> → JPEG</li>
+          <li><code>89 50 4E 47</code> → PNG</li>
+          <li><code>25 50 44 46</code> → PDF</li>
+          <li><code>50 4B 03 04</code> → ZIP</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {% if error %}
+      <div class="alert-error"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if results %}
+      <div class="tool-panel mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="panel-title mb-0">
+            <i class="bi bi-check2-circle me-2 text-accent"></i>
+            카빙 결과 — {{ results.count }}개 복구
+          </h6>
+          {% if download_id %}
+          <a href="/tools/carve/download/{{ download_id }}"
+             class="btn btn-sm btn-outline-accent">
+            <i class="bi bi-download me-1"></i>ZIP 다운로드
+          </a>
+          {% endif %}
+        </div>
+
+        <div class="result-meta mb-3">
+          <span><i class="bi bi-file-earmark me-1"></i>{{ results.filename }}</span>
+          <span class="ms-3"><i class="bi bi-database me-1"></i>{{ "{:,}".format(results.size) }} bytes</span>
+          <span class="ms-3 {{ 'text-accent' if results.count else 'text-dim' }}">
+            <i class="bi bi-layers me-1"></i>{{ results.count }}개 발견
+          </span>
+        </div>
+
+        {% if results.found %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>타입</th><th>오프셋 (Hex)</th><th>섹터</th><th>크기</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in results.found %}
+              <tr>
+                <td class="text-dim">{{ loop.index }}</td>
+                <td><span class="badge-type">{{ item.type }}</span></td>
+                <td><code>{{ item.offset_hex }}</code></td>
+                <td>{{ "{:,}".format(item.sector) }}</td>
+                <td>{{ "{:,}".format(item.size) }} B</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-dim">
+          <i class="bi bi-search fs-2 d-block mb-2"></i>
+          선택한 형식의 파일이 발견되지 않았습니다.
+        </div>
+        {% endif %}
+        {% if share_token %}
+        <div class="mt-3 pt-3 d-flex gap-2 flex-wrap" style="border-top:1px solid var(--border);">
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유 링크</button>
+          <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>PDF 저장</a>
+          <a href="/tools/history" class="btn btn-sm btn-outline-secondary"><i class="bi bi-archive me-1"></i>분석 이력</a>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if not results and not error %}
+      <div class="empty-state">
+        <i class="bi bi-file-earmark-binary"></i>
+        <p>디스크 이미지나 바이너리 파일을 업로드하면<br>파일 시그니처를 탐색하여 복구합니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

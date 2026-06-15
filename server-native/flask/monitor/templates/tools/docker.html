@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Docker 이미지 분석</span></div>
+<h1 class="page-title"><i class="bi bi-box-fill me-2 text-accent"></i>Docker 이미지 분석</h1>
+<p class="page-sub">docker save .tar → manifest·config·레이어·환경변수.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form>
+<div class="form-hint mt-2">docker save IMAGE -o image.tar 로 생성</div></div></div></div>
+{% else %}{% for r in result.files %}
+<div class="tool-panel mb-3"><h6 class="panel-title">{{ r.filename }}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>{% else %}
+<table class="table table-sm" style="font-size:.84rem;">
+<tr><td class="text-dim">멤버 수</td><td>{{ r.member_count }}</td></tr>
+<tr><td class="text-dim">레이어</td><td>{{ r.layers|length }}</td></tr>
+{% if r.os %}<tr><td class="text-dim">OS</td><td>{{ r.os }}</td></tr>{% endif %}
+{% if r.architecture %}<tr><td class="text-dim">아키텍처</td><td>{{ r.architecture }}</td></tr>{% endif %}
+{% if r.cmd %}<tr><td class="text-dim">CMD</td><td><code>{{ r.cmd|join(' ') }}</code></td></tr>{% endif %}
+{% if r.entrypoint %}<tr><td class="text-dim">ENTRYPOINT</td><td><code>{{ r.entrypoint|join(' ') }}</code></td></tr>{% endif %}
+{% if r.exposed_ports %}<tr><td class="text-dim">포트</td><td>{% for p in r.exposed_ports %}<span class="tag me-1">{{ p }}</span>{% endfor %}</td></tr>{% endif %}
+</table>
+{% if r.env %}<div class="mb-2"><strong>환경변수 ({{ r.env|length }})</strong>
+<div style="max-height:200px; overflow-y:auto; font-family:monospace; font-size:.72rem; background:var(--bg); padding:.5rem;">
+{% for e in r.env %}<div style="word-break:break-all;">{{ e }}</div>{% endfor %}</div></div>{% endif %}
+{% if r.config_history %}<div><strong>레이어 빌드 이력</strong>
+{% for h in r.config_history %}<div class="p-2 mb-1 small" style="background:var(--bg);">
+<div class="text-dim">{{ h.created }}</div>
+<code style="word-break:break-all;">{{ h.created_by }}</code></div>{% endfor %}</div>{% endif %}
+{% endif %}</div>{% endfor %}
+{% endif %}</div>{% endblock %}

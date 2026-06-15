@@ -1,0 +1,30 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">ESE DB 헤더</span></div>
+<h1 class="page-title"><i class="bi bi-database-fill me-2 text-accent"></i>ESE DB 헤더</h1>
+<p class="page-sub">Windows ESE 데이터베이스(SRUDB.dat·Windows.edb·WebCacheV01.dat)의 헤더를 파싱합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" required>
+<div class="form-hint mb-3">SRUDB.dat / Windows.edb / WebCacheV01.dat — 헤더만 읽음</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3"><strong>{{ result.filename }}</strong>
+<a href="/tools/esedb" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+<div class="tool-panel"><table class="table table-sm" style="font-size:.85rem;">
+<tr><td class="text-dim" style="width:160px;">시그니처</td><td><code>{{ result.signature }}</code></td></tr>
+<tr><td class="text-dim">파일 포맷</td><td>v{{ result.file_format_version }}</td></tr>
+<tr><td class="text-dim">파일 타입</td><td>{{ result.file_type }}</td></tr>
+<tr><td class="text-dim">페이지 크기</td><td>{{ result.page_size }} bytes</td></tr>
+<tr><td class="text-dim">DB 상태</td><td><strong style="color:{% if result.db_state == 'CleanShutdown' %}#22c55e{% else %}#ef4444{% endif %}">{{ result.db_state }}</strong></td></tr>
+<tr><td class="text-dim">로그 위치</td><td>{{ result.log_position }}</td></tr>
+<tr><td class="text-dim">Consistent 위치</td><td>{{ result.consistent_position }}</td></tr>
+</table>
+<div class="text-dim small mt-2"><i class="bi bi-info-circle me-1"></i>{{ result.note }}</div></div>
+{% endif %}
+</div>{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}{% block content %}
+{% set sevcolor = {'critical':'#ef4444','high':'#f59e0b','medium':'#06b6d4','low':'#6b7280'} %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">AI 허니트랩</span></div>
+<h1 class="page-title"><i class="bi bi-bug-fill me-2 text-accent"></i>AI 침입자 허니트랩</h1>
+<p class="page-sub">LLM 에이전트를 표적으로 잡는 능동 방어·포렌식 — 프롬프트 인젝션 카나리 + 자동 차단</p></div></div>
+
+<div class="container pb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-dim small"><i class="bi bi-broadcast me-1 text-accent"></i>사이트 전역 트래픽 수동 감시 중 · 10초 자동 갱신
+      {% if webhook_set %}<span class="badge bg-success ms-2"><i class="bi bi-bell-fill"></i> 실시간 알림 연결됨</span>{% else %}<span class="badge bg-secondary ms-2"><i class="bi bi-bell-slash"></i> 알림 미설정</span>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      {% if webhook_set %}<button class="btn btn-sm btn-outline-success" onclick="fetch('/tools/honeytrap/test-alert',{method:'POST'}).then(r=>r.json()).then(d=>alert(d.ok?'테스트 알림 전송됨 (status '+d.status+')':'실패: '+(d.error||d.status)))"><i class="bi bi-bell me-1"></i>알림 테스트</button>{% endif %}
+      <a href="/tools/honeytrap/export" class="btn btn-sm btn-outline-info"><i class="bi bi-download me-1"></i>증거 export</a>
+      <button class="btn btn-sm btn-outline-danger" onclick="if(confirm('수집 데이터·차단목록 초기화?')){fetch('/tools/honeytrap/clear',{method:'POST'}).then(()=>location.reload())}">초기화</button>
+    </div>
+  </div>
+
+  {# KPI #}
+  <div class="row g-2 mb-4">
+    {% set kpis = [
+      ('AI 에이전트 확정', summary.ai_confirmed, '#ef4444', 'bi-robot'),
+      ('AI 추정', summary.ai_suspected, '#f59e0b', 'bi-cpu'),
+      ('자동 스캐너', summary.scanners, '#06b6d4', 'bi-search'),
+      ('익스플로잇 시도', summary.exploits, '#a78bfa', 'bi-exclamation-octagon'),
+      ('카나리 트립', summary.canary_trips, '#ef4444', 'bi-flag-fill'),
+      ('차단된 IP', summary.blocked, '#22c55e', 'bi-shield-lock-fill'),
+      ('🕸️ 타르핏 유인', summary.tarpit_sessions, '#a78bfa', 'bi-bug'),
+      ('쓰레기 페이지 제공', summary.garbage_served, '#a78bfa', 'bi-recycle'),
+    ] %}
+    {% for label,val,col,ic in kpis %}
+    <div class="col-6 col-md-2">
+      <div class="tool-panel text-center py-3" style="border-top:2px solid {{ col }}">
+        <div style="font-size:1.6rem;font-weight:700;color:{{ col }}">{{ val }}</div>
+        <div class="text-dim" style="font-size:.72rem"><i class="bi {{ ic }} me-1"></i>{{ label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# 차단 목록 #}
+  {% if blocked %}
+  <div class="tool-panel mb-4" style="border-left:3px solid #22c55e">
+    <h6 class="text-accent mb-2"><i class="bi bi-shield-lock-fill me-1"></i>차단된 공격자 ({{ blocked|length }})</h6>
+    <div style="max-height:160px;overflow:auto"><table class="table table-sm table-dark mb-0">
+      <thead><tr><th>IP</th><th>사유</th><th>시각(UTC)</th><th></th></tr></thead><tbody>
+      {% for b in blocked %}<tr>
+        <td style="font-family:monospace">{{ b.ip }}</td>
+        <td class="text-dim small">{{ b.reason }}</td>
+        <td class="text-dim small">{{ b.ts }}</td>
+        <td><button class="btn btn-sm btn-outline-secondary py-0" onclick="fetch('/tools/honeytrap/unblock',{method:'POST',body:new URLSearchParams({ip:'{{ b.ip }}'})}).then(()=>location.reload())">해제</button></td>
+      </tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  {% endif %}
+
+  {# 세션 #}
+  <div class="tool-panel">
+    <h6 class="text-accent mb-2"><i class="bi bi-people-fill me-1"></i>포착된 공격자 세션 ({{ sessions|length }})</h6>
+    {% if not sessions %}
+      <div class="text-center text-dim py-5">
+        <i class="bi bi-shield-check" style="font-size:2.4rem;color:#22c55e"></i>
+        <div class="mt-2">아직 포착된 침입 시도가 없습니다. 함정은 무장 완료 상태입니다.</div>
+        <div class="small mt-1">디코이: <code>/.env</code> <code>/admin</code> <code>/.git/config</code> <code>/llms.txt</code> <code>/api/keys</code> … (프롬프트 인젝션 카나리 내장)</div>
+      </div>
+    {% else %}
+    <div style="max-height:620px;overflow:auto">
+    <table class="table table-sm table-dark align-middle">
+      <thead><tr><th>심각도</th><th>행위자</th><th>IP</th><th>히트</th><th>경로(샘플)</th><th>User-Agent</th><th>최근(UTC)</th><th></th></tr></thead>
+      <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td><span class="badge" style="background:{{ sevcolor[s.severity] }}">{{ s.severity }}</span></td>
+        <td>{% if s.canary %}<i class="bi bi-flag-fill text-danger"></i> {% endif %}<b>{{ s.actor }}</b></td>
+        <td style="font-family:monospace;font-size:.74rem">{{ s.ip }}</td>
+        <td>{{ s.hits }}</td>
+        <td style="font-family:monospace;font-size:.7rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.paths[:4]|join(' · ') }}</td>
+        <td class="text-dim" style="font-size:.7rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.uas[0] if s.uas else '-' }}</td>
+        <td class="text-dim small">{{ s.last.split('T')[1][:8] if 'T' in s.last else s.last }}</td>
+        <td><a class="btn btn-sm btn-outline-info py-0" href="/tools/honeytrap/s/{{ s.ip }}">상세</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>setTimeout(()=>location.reload(), 10000);</script>
+{% endblock %}

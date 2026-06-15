@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">로컬 스크립트</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-download me-2 text-accent"></i>로컬 실행 스크립트</h1>
+    <p class="page-sub">유저 PC에서 직접 실행하는 포렌식 수집·분석 스크립트입니다. 브라우저는 로컬 디스크/메모리에 접근할 수 없어 다운로드 후 관리자 권한으로 직접 실행해야 합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="alert mb-3" style="background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:.5rem; padding:.85rem 1rem;">
+    <i class="bi bi-shield-exclamation me-2" style="color:#f59e0b"></i>
+    <strong style="color:#f59e0b">실행 전 확인 사항:</strong>
+    <span class="text-dim">• 관리자/root 권한 필요 • 본인 소유 시스템 또는 위임받은 시스템에서만 실행 • 결과 파일은 평문이므로 안전하게 보관</span>
+  </div>
+
+  <div class="tool-panel mb-4" style="border-left:3px solid var(--accent);">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-shield-check text-accent" style="font-size:1.1rem;"></i>
+      <strong>다운로드 무결성 검증</strong>
+      <a href="/tools/verify" class="btn btn-sm btn-accent ms-auto" style="padding:.15rem .55rem; font-size:.78rem;">
+        <i class="bi bi-shield-check me-1"></i>체크섬 검증 페이지
+      </a>
+      <a href="/tools/scripts/checksums.txt" class="btn btn-sm btn-outline-info ms-1" style="padding:.15rem .55rem; font-size:.78rem;">
+        <i class="bi bi-download me-1"></i>checksums.txt
+      </a>
+    </div>
+    <div class="text-dim" style="font-size:.83rem; line-height:1.6;">
+      각 스크립트의 SHA-256을 우측에 표시했습니다. 다운로드 후 다음 명령으로 검증하세요:
+    </div>
+    <div class="row g-2 mt-2" style="font-size:.78rem;">
+      <div class="col-md-4"><strong class="text-accent">Windows:</strong> <code>Get-FileHash &lt;file&gt; -Algorithm SHA256</code></div>
+      <div class="col-md-4"><strong class="text-accent">Linux:</strong> <code>sha256sum &lt;file&gt;</code></div>
+      <div class="col-md-4"><strong class="text-accent">macOS:</strong> <code>shasum -a 256 &lt;file&gt;</code></div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% set scripts = [
+      ('forensiclab_ram_dumper.py', 'bi-memory', '#00d4ff', '메모리 RAM 덤프',
+       'WinPmem/AVML/osxpmem 래퍼. 실행 중 시스템의 물리 메모리를 .raw / .lime 형식으로 캡처합니다.',
+       ['Win', 'Linux', 'Mac'], 'B0D916E64B7FEE5EC91313E598C67EB189CDAE248E394C3D44A7C9EE650576DB', 5625),
+      ('forensiclab_triage_collector.py', 'bi-collection-fill', '#a78bfa', '트리아지 수집',
+       '레지스트리 하이브·이벤트 로그·Prefetch·LNK·브라우저 히스토리·USB 이력을 한번에 수집해 ZIP으로 묶습니다.',
+       ['Windows'], '08AED92CD6143993EF02B2767DBED58DBF319AD8D3D60584DDBC9D9E1272B162', 7002),
+      ('forensiclab_browser_artifacts.py', 'bi-globe2', '#10b981', '브라우저 아티팩트',
+       'Chrome·Edge·Firefox·Brave·Opera·Safari의 히스토리·다운로드·쿠키·로그인·캐시를 SQLite에서 추출합니다.',
+       ['Win', 'Linux', 'Mac'], 'CC833EF297CE521525281D8C8816636EC4498CE6BD45CAAFCE70DD5FAA31B671', 8708),
+      ('forensiclab_registry_collector.py', 'bi-diagram-2-fill', '#f59e0b', '레지스트리 하이브 수집',
+       'reg save로 SYSTEM·SOFTWARE·SAM·SECURITY·NTUSER.DAT·UsrClass.dat·AmCache.hve를 라이브 추출합니다.',
+       ['Windows'], 'BF56E0C99D07DC3E8AD3273053E51FD804D778CEFD408B3F555B946D03F58855', 4806),
+      ('forensiclab_disk_imager.py', 'bi-hdd-network-fill', '#ef4444', '디스크 이미저 (dd)',
+       'dd 기반 비트 단위 디스크 이미징. SHA256 동시 계산, 진행률 표시, E01 옵션.',
+       ['Linux', 'Mac'], '77D5B72C4BFD01DEEFED5B3289B2F55A6A6C3992A2CF97E8C18FCE85485058F3', 4020),
+      ('forensiclab_usb_history.py', 'bi-usb-symbol', '#3b82f6', 'USB 연결 이력',
+       'SYSTEM·SOFTWARE·NTUSER 레지스트리에서 USB Vendor·Product·시리얼·최초/마지막 연결 시각을 추출합니다.',
+       ['Windows'], '51349E375B210FDC7CD206A027E83BEB3B1EAB66842D35A3608367CD05DB361F', 6111),
+      ('forensiclab_eventlog_collector.py', 'bi-journal-text', '#06b6d4', '이벤트 로그 수집',
+       'Security·System·Application·PowerShell·Sysmon EVTX를 복사하고 핵심 이벤트(4624·4625·4688·7045 등)를 추출.',
+       ['Windows'], '084CC30E9C85CC7EFC10103F633128730CF4BD41725FFC8676FF917A48FAC63E', 5256),
+      ('forensiclab_mbr_repair.py', 'bi-hdd-stack', '#ef4444', 'MBR 복구',
+       '손상된 MBR을 VBR 시그니처 스캔으로 재건. Windows(\\\\.\\PhysicalDriveN)·Linux(/dev/sdX) 지원.',
+       ['Win', 'Linux'], 'A32AF73503E2BBAD977C5D9E44397290A7D68672E37F8C1DC87DDB3B1FBB4B04', 15589),
+    ] %}
+
+    {% for name, icon, color, title, desc, oses, sha, size in scripts %}
+    <div class="col-md-6 col-lg-4">
+      <div class="tool-panel h-100" style="border-top:3px solid {{ color }};">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi {{ icon }}" style="font-size:1.6rem; color:{{ color }};"></i>
+          <strong style="font-size:.95rem;">{{ title }}</strong>
+        </div>
+        <p class="text-dim" style="font-size:.82rem; line-height:1.45; min-height:65px;">{{ desc }}</p>
+        <div class="d-flex flex-wrap gap-1 mb-3">
+          {% for os in oses %}<span class="tag" style="font-size:.7rem">{{ os }}</span>{% endfor %}
+          <span class="tag ms-auto" style="font-size:.7rem; background:rgba(0,212,255,.1);">{{ "{:,}".format(size) }} B</span>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/tools/scripts/{{ name }}" class="btn btn-sm btn-accent flex-fill">
+            <i class="bi bi-download me-1"></i>다운로드
+          </a>
+        </div>
+        <div class="text-dim mt-2" style="font-size:.7rem; font-family:monospace; word-break:break-all;">{{ name }}</div>
+        <div class="mt-2 p-2" style="background:var(--bg); border-radius:.35rem;">
+          <div class="d-flex align-items-center gap-1" style="font-size:.68rem;">
+            <i class="bi bi-shield-check" style="color:var(--accent); opacity:.7;"></i>
+            <span class="text-dim">SHA-256</span>
+            <button class="btn btn-sm ms-auto" style="padding:0 .3rem; font-size:.66rem; background:transparent; border:1px solid var(--border); color:var(--text-dim);"
+                    onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent.trim()); this.innerHTML='<i class=\'bi bi-check2\'></i>'; setTimeout(()=>this.innerHTML='<i class=\'bi bi-clipboard\'></i>',1500);">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          <div style="font-family:monospace; font-size:.62rem; word-break:break-all; color:var(--text-dim); line-height:1.3; margin-top:.15rem;">{{ sha }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="tool-panel mt-4">
+    <h6 class="panel-title"><i class="bi bi-question-circle me-2"></i>왜 다운로드 방식인가</h6>
+    <ul class="text-dim" style="font-size:.85rem; line-height:1.7; padding-left:1.2rem;">
+      <li>브라우저는 보안 샌드박스로 인해 로컬 디스크·메모리·하드웨어에 직접 접근할 수 없습니다.</li>
+      <li>서버에서 원격으로 사용자 PC의 자료를 가져올 수 없으며 가져와서도 안 됩니다 (프라이버시·법적 이슈).</li>
+      <li>모든 스크립트는 표준 라이브러리만 사용하여 의존성 설치 없이 실행 가능합니다.</li>
+      <li>면책 조항 + 명시적 동의(YES 타이핑) 후에만 실행되도록 설계되었습니다.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

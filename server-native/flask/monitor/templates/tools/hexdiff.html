@@ -1,0 +1,41 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">파일 헥스 비교</span></div>
+<h1 class="page-title"><i class="bi bi-distribute-horizontal me-2 text-accent"></i>파일 헥스 비교</h1>
+<p class="page-sub">두 파일을 바이트 단위로 비교하여 차이 위치를 헥스로 표시합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<label class="form-label-sm">파일 A</label>
+<input type="file" name="file_a" class="form-control mb-3" required>
+<label class="form-label-sm">파일 B</label>
+<input type="file" name="file_b" class="form-control mb-3" required>
+<button class="btn btn-accent w-100"><i class="bi bi-arrow-left-right me-1"></i>비교</button>
+</form></div></div></div>
+{% else %}
+<div class="tool-panel mb-3" style="border-left:3px solid {% if result.identical %}#22c55e{% else %}#ef4444{% endif %};">
+<h6 class="panel-title">{% if result.identical %}<i class="bi bi-check-circle-fill text-success me-2"></i>완전 일치{% else %}<i class="bi bi-x-circle-fill text-danger me-2"></i>{{ result.diffs|length }}개 바이트 차이{% endif %}</h6>
+<div class="row" style="font-size:.82rem;">
+<div class="col-md-6"><strong>A: {{ result.name_a }}</strong> ({{ result.size_a }} B)
+<div class="text-dim small">SHA-256: <code style="font-size:.65rem; word-break:break-all;">{{ result.sha256_a }}</code></div></div>
+<div class="col-md-6"><strong>B: {{ result.name_b }}</strong> ({{ result.size_b }} B)
+<div class="text-dim small">SHA-256: <code style="font-size:.65rem; word-break:break-all;">{{ result.sha256_b }}</code></div></div>
+</div></div>
+
+{% if not result.identical %}
+<div class="tool-panel"><h6 class="panel-title">바이트별 차이 ({{ result.diffs|length }})</h6>
+<div style="max-height:500px; overflow-y:auto;">
+<table class="table table-sm" style="font-size:.78rem; font-family:monospace;">
+<thead><tr class="text-dim"><th>오프셋</th><th>A</th><th>B</th></tr></thead>
+<tbody>{% for d in result.diffs %}<tr>
+<td><code>0x{{ "%08x"|format(d.offset) }}</code></td>
+<td style="color:#22c55e">{{ d.a }}</td>
+<td style="color:#ef4444">{{ d.b }}</td>
+</tr>{% endfor %}</tbody></table></div>
+<a href="/tools/hexdiff" class="btn btn-sm btn-outline-secondary mt-2"><i class="bi bi-arrow-left me-1"></i>새 비교</a></div>
+{% endif %}
+{% endif %}
+</div>{% endblock %}

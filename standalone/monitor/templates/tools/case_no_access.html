@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<h1 class="page-title"><i class="bi bi-shield-x me-2 text-danger"></i>접근 거부</h1>
+<p class="page-sub">이 사건에 접근할 권한이 없습니다.</p>
+</div></div>
+
+<div class="container pb-5">
+<div class="tool-panel text-center" style="padding:3rem 2rem;">
+<i class="bi bi-shield-fill-x" style="font-size:3rem; color:#ef4444; margin-bottom:1rem;"></i>
+<h5>사건 #{{ case_id }} 접근 권한 없음</h5>
+<p class="text-dim">이 사건의 소유자 또는 관리자에게 <strong style="color:var(--accent);">{{ required }}</strong> 이상 권한을 요청하세요.</p>
+<a href="/tools/case" class="btn btn-accent mt-3"><i class="bi bi-arrow-left me-1"></i>내 사건 목록</a>
+</div>
+</div>{% endblock %}

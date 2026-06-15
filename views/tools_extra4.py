@@ -1,4 +1,4 @@
-"""ForensicLab 4차 확장 — 71개 신규 도구"""
+﻿"""ForensicLab 4차 확장 — 71개 신규 도구"""
 import base64
 import datetime as _dt
 import gzip
@@ -21,8 +21,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from flask import request, render_template, jsonify
-from hospital.views.tools import bp, _save_log
-from hospital.views.tools_extra3 import get_files, _extract_iocs
+from monitor.views.tools import bp, _save_log
+from monitor.views.tools_extra3 import get_files, _extract_iocs
 
 
 # ====================================================================
@@ -1926,7 +1926,7 @@ def autoanalyze_tool():
                         r['recommendations'].append({'tool': tool, 'label': label,
                                                      'url': f'/tools/{tool}'})
                 # 추가 분석: 엔트로피
-                from hospital.views.tools_extra import _shannon_entropy
+                from monitor.views.tools_extra import _shannon_entropy
                 ent = _shannon_entropy(data)
                 r['entropy'] = round(ent, 3)
                 if ent > 7.5:

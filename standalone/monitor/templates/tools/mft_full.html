@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">MFT 풀 파싱 (pytsk3)</span></div>
+<h1 class="page-title"><i class="bi bi-list-columns-reverse me-2 text-accent"></i>MFT 풀 파싱 (pytsk3)</h1>
+<p class="page-sub">디스크 이미지 또는 $MFT → 파일 시스템 풀 워킹</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<div class="form-hint mb-3">디스크 이미지 (.dd/.img/.E01) 또는 $MFT 추출 파일</div>
+<button class="btn btn-accent w-100">파싱</button>
+</form></div></div></div>
+{% else %}{% if result.partitions %}<div class="tool-panel mb-3">
+<h6 class="panel-title">발견된 파티션 ({{ result.partitions|length }})</h6>
+<table class="table table-sm" style="font-size:.82rem;"><thead><tr class="text-dim"><th>주소</th><th>설명</th><th>시작</th><th>길이</th></tr></thead><tbody>
+{% for p in result.partitions %}<tr><td>{{ p.addr }}</td><td>{{ p.desc }}</td><td>{{ p.start }}</td><td>{{ p.len }}</td></tr>{% endfor %}
+</tbody></table><div class="text-dim small">{{ result.note }}</div></div>
+{% else %}<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ result.filename }} — {{ result.fs_type }}</h6>
+<div class="text-dim small">블록 크기 {{ result.block_size }} · 블록 수 {{ result.block_count }} · 추출 {{ result.total }}건</div>
+</div>
+<div class="tool-panel"><div style="max-height:600px; overflow-y:auto;">
+<table class="table table-sm" style="font-size:.76rem;">
+<thead style="position:sticky; top:0; background:var(--bg-card);"><tr class="text-dim">
+<th>경로</th><th>타입</th><th>크기</th><th>수정</th><th>생성</th><th>inode</th></tr></thead><tbody>
+{% for f in result.files %}<tr><td style="word-break:break-all;"><code>{{ f.path }}</code></td>
+<td>{{ f.type }}</td><td>{{ "{:,}".format(f.size) }}</td>
+<td><code style="font-size:.7rem;">{{ f.mtime[:19] if f.mtime else '' }}</code></td>
+<td><code style="font-size:.7rem;">{{ f.ctime[:19] if f.ctime else '' }}</code></td>
+<td>{{ f.inode }}</td>
+</tr>{% endfor %}</tbody></table></div></div>{% endif %}
+{% endif %}</div>{% endblock %}

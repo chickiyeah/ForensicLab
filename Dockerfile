@@ -29,4 +29,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "hospital:create_app()"]
+CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "monitor:create_app()"]

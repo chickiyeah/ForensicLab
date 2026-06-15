@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Microsoft CAB</span></div>
+<h1 class="page-title"><i class="bi bi-file-earmark-binary me-2 text-accent"></i>Microsoft CAB</h1>
+<p class="page-sub">Cabinet 파일 헤더</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3"  required>
+<button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }}</h6>
+<table class="table table-sm" style="font-size:.84rem;"><tbody>
+{% for k, v in result.items() %}{% if k != 'filename' and not (v is mapping) and not (v is iterable and v is not string) %}
+<tr><td class="text-dim">{{ k }}</td><td><code style="word-break:break-all;">{{ v }}</code></td></tr>
+{% endif %}{% endfor %}</tbody></table>
+{% if result.strings_sample %}<div class="mt-2"><strong>문자열:</strong>
+<div style="max-height:200px; overflow-y:auto; font-family:monospace; font-size:.72rem; background:var(--bg); padding:.4rem;">
+{% for s in result.strings_sample %}<div>{{ s }}</div>{% endfor %}</div></div>{% endif %}
+</div>{% endif %}</div>{% endblock %}

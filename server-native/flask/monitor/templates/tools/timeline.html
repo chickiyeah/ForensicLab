@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">타임라인 재구성</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-clock-history me-2 text-accent"></i>타임라인 재구성</h1>
+    <p class="page-sub">이미지 EXIF·로그·PDF 메타데이터에서 타임스탬프를 추출해 시간순으로 정렬합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">분석할 파일 (복수 선택 가능)</label>
+            <input type="file" name="files" class="form-control" multiple required>
+            <div class="form-hint">이미지(JPEG·TIFF), 로그 텍스트, PDF 지원</div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-play-fill me-1"></i>타임라인 생성
+          </button>
+        </form>
+      </div>
+      <div class="info-box mt-3">
+        <h6><i class="bi bi-info-circle me-2"></i>지원 타임스탬프</h6>
+        <ul class="sig-list">
+          <li><strong>EXIF</strong> — 이미지 촬영 일시</li>
+          <li><strong>Apache 로그</strong> — 요청 시각</li>
+          <li><strong>Syslog</strong> — 시스템 이벤트 시각</li>
+          <li><strong>Windows 이벤트 로그</strong></li>
+          <li><strong>PDF</strong> — 생성·수정 일시</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {% if error %}
+      <div class="alert-error"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if events is not none %}
+        {% if events %}
+        <div class="tool-panel">
+          <h6 class="panel-title">
+            <i class="bi bi-list-ul me-2 text-accent"></i>타임라인
+            <span class="badge ms-2" style="background:var(--accent);color:#000;font-size:.7rem;">{{ events|length }}개 이벤트</span>
+            {% if share_token %}
+            <div class="float-end d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유</button>
+              <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>PDF</a>
+            </div>
+            {% endif %}
+          </h6>
+          <div style="max-height:600px; overflow-y:auto;">
+            {% set ns = namespace(prev_date='') %}
+            {% for ev in events %}
+              {% set cur_date = ev.ts_str[:10] if ev.ts_str|length >= 10 else '' %}
+              {% if cur_date != ns.prev_date and cur_date %}
+              <div class="text-dim small fw-bold px-2 py-1 mt-2" style="background:#0d1a2d; border-radius:4px;">
+                <i class="bi bi-calendar3 me-1"></i>{{ cur_date }}
+              </div>
+              {% set ns.prev_date = cur_date %}
+              {% endif %}
+              <div class="d-flex gap-3 py-2" style="border-bottom:1px solid #0a1628; font-size:.84rem;">
+                <span class="text-accent text-nowrap" style="min-width:160px; font-family:monospace;">{{ ev.ts_str }}</span>
+                <span class="badge align-self-start" style="background:#0d1a2d;border:1px solid var(--border);color:var(--text-dim);font-size:.7rem;white-space:nowrap;">{{ ev.type }}</span>
+                <div>
+                  <div class="text-dim small">{{ ev.source }}</div>
+                  <div>{{ ev.detail }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-clock-history"></i>
+          <p>타임스탬프를 포함한 파일이 없거나<br>지원 형식이 아닙니다.</p>
+        </div>
+        {% endif %}
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-clock-history"></i>
+        <p>파일을 업로드하면<br>타임라인이 여기에 표시됩니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function copyShareLink(t) {
+  navigator.clipboard.writeText(location.origin + '/tools/share/' + t).then(function() {
+    event.target.innerHTML = '<i class="bi bi-check me-1"></i>복사됨';
+    setTimeout(function() { event.target.innerHTML = '<i class="bi bi-share me-1"></i>공유'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

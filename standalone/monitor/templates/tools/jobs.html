@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">백그라운드 작업</span></div>
+<h1 class="page-title"><i class="bi bi-cpu me-2 text-accent"></i>백그라운드 작업</h1>
+<p class="page-sub">Volatility/ALEAPP/Hashcat 등 대용량 작업 큐</p></div></div>
+<div class="container pb-5"><div class="tool-panel">
+<h6 class="panel-title">작업 ({{ jobs|length }})</h6>
+{% if jobs %}<table class="table table-sm" style="font-size:.82rem;">
+<thead><tr class="text-dim"><th>ID</th><th>이름</th><th>상태</th><th>진행</th><th>시작</th><th>종료</th></tr></thead><tbody>
+{% for j in jobs %}<tr>
+<td><a href="/tools/jobs/{{ j.id }}"><code>{{ j.id[:12] }}</code></a></td>
+<td>{{ j.name }}</td>
+<td><span class="tag" style="background:{% if j.status == 'completed' %}rgba(34,197,94,.15);color:#22c55e{% elif j.status == 'running' %}rgba(0,212,255,.15);color:#00d4ff{% elif j.status == 'failed' %}rgba(239,68,68,.15);color:#ef4444{% else %}rgba(107,114,128,.15);color:#9ca3af{% endif %};">{{ j.status }}</span></td>
+<td><div style="background:var(--bg); height:.4rem; border-radius:.2rem; overflow:hidden; width:100px;"><div style="background:var(--accent); height:100%; width:{{ j.progress }}%;"></div></div></td>
+<td><code style="font-size:.7rem;">{{ j.started[:19] if j.started else '' }}</code></td>
+<td><code style="font-size:.7rem;">{{ j.finished[:19] if j.finished else '' }}</code></td>
+</tr>{% endfor %}</tbody></table>
+{% else %}<div class="text-dim text-center p-5">아직 작업이 없습니다.</div>{% endif %}
+</div></div>{% endblock %}

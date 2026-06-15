@@ -1,6 +1,6 @@
-"""ForensicLab — 도구별 사용법 도움말 시스템"""
+﻿"""ForensicLab — 도구별 사용법 도움말 시스템"""
 from flask import request, render_template, jsonify
-from hospital.views.tools import bp
+from monitor.views.tools import bp
 
 
 # url path → 도움말 dict

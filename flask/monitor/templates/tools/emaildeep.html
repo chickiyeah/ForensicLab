@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">이메일 헤더 심층</span></div>
+<h1 class="page-title"><i class="bi bi-envelope-fill me-2 text-accent"></i>이메일 헤더 심층</h1>
+<p class="page-sub">경유 IP·X-헤더·도메인 불일치·인증 결과</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<textarea name="headers" class="form-control mb-2" rows="12" style="font-family:monospace; font-size:.7rem;"></textarea>
+<input type="file" name="file" class="form-control mb-3" accept=".eml,.txt">
+<button class="btn btn-accent w-100">분석</button></form></div></div>
+<div class="col-lg-7">{% if result %}
+{% if result.domain_mismatch %}<div class="alert alert-warning">{{ result.domain_mismatch }}</div>{% endif %}
+<div class="tool-panel mb-2"><h6 class="panel-title">인증</h6>
+<span class="tag" style="background:{% if result.spf %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">SPF</span>
+<span class="tag" style="background:{% if result.dkim %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">DKIM</span>
+<span class="tag" style="background:{% if result.dmarc %}rgba(34,197,94,.15);color:#22c55e{% else %}rgba(239,68,68,.15);color:#ef4444{% endif %};">DMARC</span>
+</div>
+{% if result.hop_ips %}<div class="tool-panel mb-2"><h6 class="panel-title">경유 IP</h6>
+{% for ip in result.hop_ips %}<code class="d-block">{{ ip }}</code>{% endfor %}</div>{% endif %}
+{% if result.received_hops %}<div class="tool-panel mb-2"><h6 class="panel-title">Received 경로</h6>
+{% for h in result.received_hops %}<div class="small p-1" style="background:var(--bg); margin-bottom:.2rem;">{{ h }}</div>{% endfor %}</div>{% endif %}
+{% if result.x_headers %}<div class="tool-panel mb-2"><h6 class="panel-title">X-* 헤더</h6>
+{% for k, v in result.x_headers.items() %}<div><strong>{{ k }}:</strong> <code style="font-size:.72rem; word-break:break-all;">{{ v }}</code></div>{% endfor %}</div>{% endif %}
+{% endif %}</div></div></div>{% endblock %}

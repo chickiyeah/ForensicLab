@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">MBR 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-hdd me-2 text-accent"></i>MBR 분석</h1>
+    <p class="page-sub">디스크 이미지의 MBR 파티션 테이블 파싱 및 VBR 시그니처 스캔 (최대 200 MB, 읽기 전용)</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>입력</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">디스크 이미지 파일</label>
+            <input type="file" name="file" multiple class="form-control" required>
+            <div class="form-hint">.001 .img .dd .raw .bin 등</div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-search me-1"></i>MBR 분석
+          </button>
+        </form>
+      </div>
+
+      <div class="info-box mt-3">
+        <h6><i class="bi bi-info-circle me-2"></i>MBR 구조</h6>
+        <ul class="sig-list">
+          <li><code>0x000–0x1BD</code> Bootstrap code</li>
+          <li><code>0x1BE–0x1FD</code> 파티션 테이블 (4×16B)</li>
+          <li><code>0x1FE–0x1FF</code> Boot signature (55 AA)</li>
+        </ul>
+        <p class="mt-2">이 도구는 MBR을 읽기 전용으로 분석합니다. 디스크에는 어떠한 변경도 가하지 않습니다.</p>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {% if error %}
+      <div class="alert-error"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+
+      <!-- Summary -->
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-info-circle me-2"></i>요약</h6>
+        <div class="result-meta">
+          <span><i class="bi bi-file-earmark me-1"></i>{{ result.filename }}</span>
+          <span class="ms-3"><i class="bi bi-database me-1"></i>{{ "{:,}".format(result.size) }} bytes</span>
+          <span class="ms-3 {{ 'text-accent' if result.valid else 'text-danger' }}">
+            <i class="bi bi-{{ 'check-circle' if result.valid else 'x-circle' }} me-1"></i>
+            Boot Sig: {{ result.boot_sig }} — {{ '유효' if result.valid else '손상' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Partition Table -->
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-table me-2"></i>파티션 테이블 (MBR)</h6>
+        {% if result.partitions %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>슬롯</th><th>부팅</th><th>타입</th><th>LBA 시작</th><th>LBA 크기</th><th>용량</th><th>바이트 오프셋</th></tr>
+            </thead>
+            <tbody>
+              {% for p in result.partitions %}
+              <tr>
+                <td>{{ p.slot }}</td>
+                <td>
+                  {% if p.bootable %}
+                  <span class="badge-ok">Bootable</span>
+                  {% else %}
+                  <span class="text-dim">—</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge-type">{{ p.type_name }}</span><code class="ms-1 small text-dim">{{ p.type_id }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba_start) }}</code></td>
+                <td><code>{{ "{:,}".format(p.lba_size) }}</code></td>
+                <td>{{ p.size_mb }} MB</td>
+                <td><code>{{ p.byte_offset }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-3 text-dim">파티션 테이블이 비어있거나 손상되었습니다.</div>
+        {% endif %}
+      </div>
+
+      <!-- VBR Scan -->
+      {% if result.vbr_found %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-radar me-2"></i>VBR 시그니처 스캔 결과</h6>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>파일시스템</th><th>LBA</th><th>바이트 오프셋</th></tr></thead>
+            <tbody>
+              {% for v in result.vbr_found %}
+              <tr>
+                <td><span class="badge-type">{{ v.fs }}</span></td>
+                <td><code>{{ "{:,}".format(v.lba) }}</code></td>
+                <td><code>{{ v.offset_hex }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Hex Dump -->
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-code-slash me-2"></i>MBR 헥스 덤프 (512 bytes)</h6>
+        <div class="hex-dump">
+          <div class="hex-header">
+            <span class="hex-off">Offset</span>
+            <span class="hex-hex">00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F</span>
+            <span class="hex-asc">ASCII</span>
+          </div>
+          {% for row in result.hex_dump %}
+          <div class="hex-row {{ 'hex-hi' if row.highlight else '' }}">
+            <span class="hex-off">{{ row.offset }}</span>
+            <span class="hex-hex">{{ row.hex }}</span>
+            <span class="hex-asc">{{ row.ascii }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="form-hint mt-2"><span class="hex-hi-label">■</span> 파티션 테이블 영역 (0x1BE–0x1FD)</div>
+        {% if share_token %}
+        <div class="mt-3 pt-3 d-flex gap-2 flex-wrap" style="border-top:1px solid var(--border);">
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유 링크</button>
+          <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>PDF 저장</a>
+          <a href="/tools/history" class="btn btn-sm btn-outline-secondary"><i class="bi bi-archive me-1"></i>분석 이력</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {% endif %}
+
+      {% if not result and not error %}
+      <div class="empty-state">
+        <i class="bi bi-hdd"></i>
+        <p>디스크 이미지를 업로드하면 MBR 파티션 테이블과<br>VBR 시그니처를 분석합니다.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">파일 암호화</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-shield-lock me-2 text-accent"></i>파일 암호화 / 복호화</h1>
+    <p class="page-sub">AES-256-GCM + PBKDF2로 파일을 안전하게 암호화하거나 복호화합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-gear me-2"></i>설정</h6>
+        <form method="POST" enctype="multipart/form-data">
+
+          <!-- Mode toggle -->
+          <div class="mb-4">
+            <label class="form-label-sm">동작 모드</label>
+            <div class="d-flex gap-2">
+              <label class="flex-fill">
+                <input type="radio" name="mode" value="encrypt" id="modeEnc" checked
+                       onchange="updateMode()" style="display:none;">
+                <div class="mode-btn active" id="btnEnc" onclick="document.getElementById('modeEnc').checked=true;updateMode()">
+                  <i class="bi bi-lock-fill me-1"></i>암호화
+                </div>
+              </label>
+              <label class="flex-fill">
+                <input type="radio" name="mode" value="decrypt" id="modeDec"
+                       onchange="updateMode()" style="display:none;">
+                <div class="mode-btn" id="btnDec" onclick="document.getElementById('modeDec').checked=true;updateMode()">
+                  <i class="bi bi-unlock-fill me-1"></i>복호화
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-sm" id="fileLbl">암호화할 파일</label>
+            <input type="file" name="file" class="form-control" required>
+            <div class="form-hint" id="fileHint">암호화 후 .flab 확장자 파일이 다운로드됩니다</div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-sm">비밀번호</label>
+            <div class="input-group">
+              <input type="password" name="password" class="form-control" id="pwInput"
+                     placeholder="비밀번호 입력" required autocomplete="off">
+              <button type="button" class="btn btn-outline-secondary"
+                      onclick="togglePW()"><i class="bi bi-eye" id="eyeIcon"></i></button>
+            </div>
+            <div class="form-hint">PBKDF2-SHA256 600,000 iterations로 키를 생성합니다</div>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100" id="submitBtn">
+            <i class="bi bi-lock-fill me-1"></i>파일 암호화 및 다운로드
+          </button>
+        </form>
+      </div>
+
+      <!-- Algorithm info -->
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-info-circle me-2"></i>알고리즘 정보</h6>
+        <div class="meta-list">
+          <div class="meta-row"><span class="text-dim small">암호화</span><span><code>AES-256-GCM</code></span></div>
+          <div class="meta-row"><span class="text-dim small">키 유도</span><span><code>PBKDF2-HMAC-SHA256</code></span></div>
+          <div class="meta-row"><span class="text-dim small">반복횟수</span><span>600,000 (OWASP 권장)</span></div>
+          <div class="meta-row"><span class="text-dim small">솔트</span><span>128-bit 랜덤</span></div>
+          <div class="meta-row"><span class="text-dim small">Nonce</span><span>96-bit 랜덤</span></div>
+          <div class="meta-row"><span class="text-dim small">인증태그</span><span>128-bit GCM 태그</span></div>
+          <div class="meta-row"><span class="text-dim small">파일 형식</span><span><code>FLAB\x01\x00 + salt + nonce + ct</code></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      {% if error %}
+      <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      <div class="empty-state">
+        <i class="bi bi-shield-lock"></i>
+        <p>파일과 비밀번호를 입력하면<br>암호화/복호화된 파일을 즉시 다운로드합니다.<br>
+        <span class="small text-dim">서버에 파일이 저장되지 않습니다.</span></p>
+      </div>
+
+      <div class="tool-panel mt-4">
+        <h6 class="panel-title"><i class="bi bi-shield-check me-2"></i>보안 특성</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div style="padding:.75rem; background:var(--bg); border-radius:.5rem; border:1px solid var(--border);">
+              <div style="color:var(--accent); font-weight:600; margin-bottom:.3rem;">
+                <i class="bi bi-check-circle me-1"></i>무결성 보장
+              </div>
+              <div class="text-dim small">GCM 인증 태그로 복호화 시 파일 위변조를 즉시 탐지합니다.</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="padding:.75rem; background:var(--bg); border-radius:.5rem; border:1px solid var(--border);">
+              <div style="color:#a78bfa; font-weight:600; margin-bottom:.3rem;">
+                <i class="bi bi-check-circle me-1"></i>동일 파일 다른 암호문
+              </div>
+              <div class="text-dim small">같은 파일·같은 암호라도 랜덤 Salt·Nonce로 매번 다른 결과.</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="padding:.75rem; background:var(--bg); border-radius:.5rem; border:1px solid var(--border);">
+              <div style="color:#f59e0b; font-weight:600; margin-bottom:.3rem;">
+                <i class="bi bi-check-circle me-1"></i>브루트포스 저항
+              </div>
+              <div class="text-dim small">PBKDF2 600,000 iterations로 대규모 암호 대입 공격을 지연.</div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div style="padding:.75rem; background:var(--bg); border-radius:.5rem; border:1px solid var(--border);">
+              <div style="color:#10b981; font-weight:600; margin-bottom:.3rem;">
+                <i class="bi bi-check-circle me-1"></i>서버 비저장
+              </div>
+              <div class="text-dim small">암호화된 파일은 메모리에서 처리 후 즉시 스트리밍 다운로드.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.mode-btn {
+  text-align: center;
+  padding: .6rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: all .2s;
+  color: var(--text-dim);
+}
+.mode-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,.08);
+}
+</style>
+
+<script>
+function updateMode() {
+  const enc = document.getElementById('modeEnc').checked;
+  document.getElementById('btnEnc').classList.toggle('active', enc);
+  document.getElementById('btnDec').classList.toggle('active', !enc);
+  document.getElementById('fileLbl').textContent = enc ? '암호화할 파일' : '복호화할 .flab 파일';
+  document.getElementById('fileHint').textContent = enc
+    ? '암호화 후 .flab 확장자 파일이 다운로드됩니다'
+    : '암호화 시 생성된 .flab 파일을 선택하세요';
+  document.getElementById('submitBtn').innerHTML = enc
+    ? '<i class="bi bi-lock-fill me-1"></i>파일 암호화 및 다운로드'
+    : '<i class="bi bi-unlock-fill me-1"></i>파일 복호화 및 다운로드';
+}
+function togglePW() {
+  const inp = document.getElementById('pwInput');
+  const icon = document.getElementById('eyeIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-"""ForensicLab 5차 확장 — 유료 도구 비등 만들기
+﻿"""ForensicLab 5차 확장 — 유료 도구 비등 만들기
 
 7대 핵심 시스템:
 1. /tools/vol-full      Volatility 3 풀 통합
@@ -27,7 +27,7 @@ from pathlib import Path
 
 from flask import request, render_template, jsonify, send_file, abort
 
-from hospital.views.tools import bp, _save_log
+from monitor.views.tools import bp, _save_log
 
 
 # ====================================================================

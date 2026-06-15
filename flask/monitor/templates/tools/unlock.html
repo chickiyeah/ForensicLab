@@ -1,0 +1,159 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">암호화 해제</span></div>
+<h1 class="page-title"><i class="bi bi-unlock-fill me-2 text-accent"></i>암호화 해제 (Unlock)</h1>
+<p class="page-sub">BitLocker · LUKS · VeraCrypt · 암호 ZIP/Office/PDF 복호화 — 암호를 모르면 사전 공격</p></div></div>
+
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>{% endif %}
+
+{% if job %}
+  <div class="alert alert-info">백그라운드 크래킹 작업 시작 (후보 {{ job.words }}개): <a href="{{ job.redirect }}">{{ job.job_id }}</a>
+  {% if job.truncated %}<br><span class="text-warning">⚠️ 사전이 너무 커서 앞부분 일부만 사용했습니다.</span>{% endif %}</div>
+  <script>setTimeout(()=>location.href='{{ job.redirect }}', 1200);</script>
+
+{% elif not result %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+  <label class="form-label-sm">암호화된 파일</label>
+  <input type="file" name="file" class="form-control mb-3" required>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label class="form-label-sm">포맷</label>
+      <select name="fmt" class="form-select">
+        <option value="auto">자동 탐지</option>
+        <option value="bitlocker">BitLocker 볼륨</option>
+        <option value="luks">LUKS 볼륨</option>
+        <option value="veracrypt">VeraCrypt / TrueCrypt</option>
+        <option value="zip">암호 ZIP</option>
+        <option value="office">암호 Office</option>
+        <option value="pdf">암호 PDF</option>
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label-sm">동작</label>
+      <select name="op" class="form-select" id="opSel" onchange="toggleOp()">
+        <option value="unlock">복호화 (암호/키 입력)</option>
+        <option value="crack">크래킹 (암호 모름 → 사전 공격)</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="unlockBox">
+    <label class="form-label-sm">BitLocker 자격 유형</label>
+    <select name="cred_type" class="form-select mb-3">
+      <option value="password">사용자 암호</option>
+      <option value="recovery">복구 키 (48자리)</option>
+      <option value="bek">BEK 키 파일</option>
+      <option value="fvek">FVEK 키</option>
+    </select>
+    <label class="form-label-sm">암호 / 복구 키 <span class="text-dim">(LUKS·VeraCrypt·ZIP·Office·PDF 는 여기에 암호)</span></label>
+    <input type="text" name="password" class="form-control mb-3" autocomplete="off"
+           placeholder="비밀번호 또는 BitLocker 복구키 (123456-123456-...)">
+    <label class="form-label-sm">BEK 파일 <span class="text-dim">(BitLocker BEK 선택 시)</span></label>
+    <input type="file" name="bekfile" class="form-control mb-3">
+  </div>
+
+  <div id="crackBox" style="display:none">
+    <label class="form-label-sm">사전 파일 업로드 <span class="text-dim">(rockyou.txt·SecLists 등 — 한 줄에 한 암호)</span></label>
+    <input type="file" name="wordlist_file" class="form-control mb-2" accept=".txt,.lst,.dic,text/plain">
+    <label class="form-label-sm">또는 직접 입력 <span class="text-dim">(우선 시도 후보 — 한 줄에 하나)</span></label>
+    <textarea name="wordlist" class="form-control mb-2" rows="6"
+              style="font-family:monospace; font-size:.74rem;"
+              placeholder="password&#10;123456&#10;qwerty&#10;admin&#10;..."></textarea>
+    <div class="text-dim small mb-3"><i class="bi bi-info-circle me-1"></i>
+      파일·직접입력을 합쳐(중복 제거) 사용합니다. 직접입력 후보를 먼저 시도.
+      문서(ZIP/Office/PDF)는 순수 파이썬 사전 대입(~500/s), 볼륨(LUKS/VeraCrypt)은 cryptsetup,
+      BitLocker는 libbde 로 시도합니다 — <b>BitLocker는 약 3초/시도로 느려</b> 소규모 타깃 사전을 권장.</div>
+  </div>
+
+  <button class="btn btn-accent w-100"><i class="bi bi-unlock me-1"></i>실행</button>
+</form>
+<div class="text-dim small mt-3">
+  <i class="bi bi-shield-lock me-1"></i>복호화 산출물은 서버 임시영역에 저장되며 <b>30분 후 자동 삭제</b>됩니다.
+  본 도구는 <b>정당한 권한이 있는 증거물</b>에만 사용하세요.
+</div>
+</div></div></div>
+
+<script>
+function toggleOp(){
+  var crack = document.getElementById('opSel').value === 'crack';
+  document.getElementById('crackBox').style.display = crack ? 'block' : 'none';
+  document.getElementById('unlockBox').style.display = crack ? 'none' : 'block';
+}
+toggleOp();
+</script>
+
+{% else %}
+{# ── 결과 ── #}
+{% if detected %}<div class="mb-3"><span class="badge" style="background:var(--bg-card2);color:var(--accent);border:1px solid var(--border)">탐지: {{ detected.label }}</span></div>{% endif %}
+
+{% if not result.ok %}
+  <div class="alert-error"><i class="bi bi-x-circle me-1"></i>복호화 실패: {{ result.error }}</div>
+  {% if result.cmd %}<div class="text-dim small mt-2">실행 명령: <code>{{ result.cmd }}</code></div>{% endif %}
+  <a href="/tools/unlock" class="btn btn-outline-secondary btn-sm mt-3">다시 시도</a>
+
+{% elif result.family == 'volume' %}
+  <div class="alert alert-success"><i class="bi bi-unlock-fill me-1"></i>볼륨 복호화 성공
+    {% if result.fs %}— 파일시스템: <b>{{ result.fs }}</b>{% endif %}
+    {% if result.image_size %}— 크기: {{ '%.1f'|format(result.image_size/1048576) }} MB{% endif %}
+  </div>
+  {% if result.list_error %}<div class="alert-error">파일 목록 오류: {{ result.list_error }}</div>{% endif %}
+  {% if result.partitions %}
+    <div class="tool-panel mb-3"><h6 class="text-accent">파티션</h6>
+    <table class="table table-sm table-dark"><thead><tr><th>#</th><th>설명</th><th>시작</th><th>길이</th></tr></thead><tbody>
+    {% for p in result.partitions %}<tr><td>{{ p.addr }}</td><td>{{ p.desc }}</td><td>{{ p.start }}</td><td>{{ p.len }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% endif %}
+  <div class="tool-panel">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="text-accent mb-0">파일 목록 ({{ result.total }}개{% if result.total >= 3000 %}+, 상한 도달{% endif %})</h6>
+      <input type="text" id="ff" class="form-control form-control-sm" style="max-width:240px" placeholder="경로 필터..." oninput="filterRows()">
+    </div>
+    <div style="max-height:560px;overflow:auto">
+    <table class="table table-sm table-dark" id="ftbl"><thead><tr><th>유형</th><th>경로</th><th>크기</th><th>수정시각(UTC)</th><th></th></tr></thead><tbody>
+    {% for fobj in result.files %}
+      <tr><td><i class="bi {{ 'bi-folder-fill text-warning' if fobj.type=='디렉터리' else 'bi-file-earmark' }}"></i> {{ fobj.type }}</td>
+      <td style="font-family:monospace;font-size:.74rem">{{ fobj.path }}</td>
+      <td>{{ fobj.size }}</td><td class="text-dim small">{{ fobj.mtime }}</td>
+      <td>{% if fobj.type=='파일' and fobj.size>0 %}<a class="btn btn-sm btn-outline-info py-0" href="/tools/unlock/file/{{ result.token }}?path={{ fobj.path|urlencode }}"><i class="bi bi-download"></i></a>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table>
+    </div>
+  </div>
+  <a href="/tools/unlock" class="btn btn-outline-secondary btn-sm mt-3">새 작업</a>
+
+{% else %}
+  {# 문서 #}
+  {% if result.encrypted == false %}
+    <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>이 파일은 암호화되어 있지 않습니다.
+      {% if result.pages %} (PDF {{ result.pages }} 페이지){% endif %}</div>
+  {% else %}
+    <div class="alert alert-success"><i class="bi bi-unlock-fill me-1"></i>복호화 성공
+      {% if result.pages %}— {{ result.pages }} 페이지{% endif %}
+      {% if result.count %}— {{ result.count }} 개 항목{% endif %}
+    </div>
+    {% if result.download %}
+      <a class="btn btn-accent" href="/tools/unlock/download/{{ result.token }}"><i class="bi bi-download me-1"></i>복호화 파일 다운로드</a>
+    {% endif %}
+    {% if result.entries %}
+      <div class="tool-panel mt-3"><h6 class="text-accent">항목 ({{ result.count }})</h6>
+      <div style="max-height:420px;overflow:auto"><table class="table table-sm table-dark"><tbody>
+      {% for e in result.entries %}<tr><td style="font-family:monospace;font-size:.74rem">{{ e.name }}</td><td class="text-end text-dim">{{ e.size }}</td></tr>{% endfor %}
+      </tbody></table></div></div>
+    {% endif %}
+  {% endif %}
+  <div class="mt-3"><a href="/tools/unlock" class="btn btn-outline-secondary btn-sm">새 작업</a></div>
+{% endif %}
+
+<script>
+function filterRows(){
+  var q=document.getElementById('ff').value.toLowerCase();
+  document.querySelectorAll('#ftbl tbody tr').forEach(function(r){
+    r.style.display = r.innerText.toLowerCase().indexOf(q)>=0 ? '' : 'none';
+  });
+}
+</script>
+{% endif %}
+</div>{% endblock %}

@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">트리아지 ZIP 통합 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-box-seam-fill me-2 text-accent"></i>트리아지 ZIP 통합 분석</h1>
+    <p class="page-sub">forensiclab_triage_collector.py 가 생성한 ZIP을 업로드하면 내부 아티팩트를 모두 분류하고, 있는 항목만 자동 파싱하여 통합 타임라인까지 생성합니다.</p>
+  </div>
+</div>
+
+<div class="container{% if result %}-fluid px-3{% endif %} pb-5">
+  {% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+
+  {% if not result %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>트리아지 ZIP 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" class="form-control mb-3" accept=".zip" required>
+          <div class="form-hint mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            <a href="/tools/scripts" class="text-accent text-decoration-none">로컬 스크립트</a>에서 받은
+            <code>forensiclab_triage_collector.py</code>를 관리자 권한으로 실행하면 .zip이 생성됩니다.
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="mode" value="background" id="bgMode">
+            <label class="form-check-label small" for="bgMode">
+              <i class="bi bi-cpu me-1"></i>백그라운드 작업으로 처리 (큰 ZIP 권장 — <a href="/tools/jobs" class="text-accent">/tools/jobs</a>에서 진행 확인)
+            </label>
+          </div>
+          <div class="alert alert-info small mb-3" style="background:rgba(0,212,255,.05); border-color:rgba(0,212,255,.3); padding:.5rem .75rem;">
+            <i class="bi bi-lightbulb me-1"></i>5MB 초과 ZIP은 자동으로 백그라운드 처리됩니다.
+          </div>
+          <button class="btn btn-accent w-100"><i class="bi bi-play-fill me-1"></i>통합 분석 시작</button>
+        </form>
+      </div>
+
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-list-check me-2"></i>자동 인식 / 파싱 항목</h6>
+        <ul class="text-dim" style="font-size:.86rem; line-height:1.7;">
+          <li>레지스트리 하이브 (SYSTEM·SOFTWARE·SAM·SECURITY 등) → 키/값/포렌식 발견사항</li>
+          <li>사용자 NTUSER.DAT / UsrClass.dat → 자동실행·UserAssist·ShellBag</li>
+          <li>Amcache.hve → 실행파일 인벤토리</li>
+          <li>EVTX 이벤트 로그 → 청크 수 추정</li>
+          <li>Prefetch (.pf) → 실행 시각·횟수·참조 파일</li>
+          <li>LNK 바로가기 → 대상 경로·MAC·타임스탬프</li>
+          <li>setupapi.dev.log → USB 연결 이력</li>
+          <li>PowerShell ConsoleHost_history.txt → 실행 명령</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <!-- 결과 -->
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <strong>{{ result.filename }}</strong>
+    <span class="text-dim small">({{ "{:,}".format(result.file_size) }} bytes · {{ result.total_files }} 파일 · 압축해제 {{ "{:,}".format(result.total_uncompressed) }} bytes)</span>
+    <span class="ms-auto"><a href="/tools/triage" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>새 ZIP</a></span>
+  </div>
+
+  {% if result.insights %}
+  {% set ins = result.insights %}
+  {% set sev_colors = {'critical':'#dc2626','high':'#ef4444','medium':'#f59e0b','low':'#3b82f6','info':'#6b7280'} %}
+  {% set sev_labels = {'critical':'치명','high':'고위험','medium':'중간','low':'낮음','info':'정보'} %}
+
+  <!-- 한눈에 보기 (Executive Summary) -->
+  <div class="tool-panel mb-3" style="border-left:4px solid var(--accent); background:linear-gradient(135deg, rgba(0,212,255,.05), rgba(0,0,0,0));">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-eyeglasses text-accent" style="font-size:1.4rem"></i>
+      <h6 class="panel-title mb-0">한눈에 보기 (Executive Summary)</h6>
+    </div>
+    <div class="mb-3" style="font-size:1.05rem; color:var(--text); line-height:1.6;">
+      <strong>{{ ins.summary_sentence }}</strong>
+    </div>
+
+    <!-- 핵심 통계 KPI -->
+    <div class="row g-2 mb-2">
+      <div class="col-6 col-md-3">
+        <div style="background:var(--bg); padding:.6rem .75rem; border-radius:.4rem; border-left:3px solid #dc2626;">
+          <div class="text-dim" style="font-size:.7rem">치명적 발견</div>
+          <div style="font-size:1.4rem; font-weight:700; color:{% if ins.severity_counts.critical %}#dc2626{% else %}#6b7280{% endif %};">
+            {{ ins.severity_counts.critical }}<span class="text-dim" style="font-size:.7rem; font-weight:400">건</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:var(--bg); padding:.6rem .75rem; border-radius:.4rem; border-left:3px solid #ef4444;">
+          <div class="text-dim" style="font-size:.7rem">고위험</div>
+          <div style="font-size:1.4rem; font-weight:700; color:{% if ins.severity_counts.high %}#ef4444{% else %}#6b7280{% endif %};">
+            {{ ins.severity_counts.high }}<span class="text-dim" style="font-size:.7rem; font-weight:400">건</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:var(--bg); padding:.6rem .75rem; border-radius:.4rem; border-left:3px solid #f59e0b;">
+          <div class="text-dim" style="font-size:.7rem">중간</div>
+          <div style="font-size:1.4rem; font-weight:700; color:{% if ins.severity_counts.medium %}#f59e0b{% else %}#6b7280{% endif %};">
+            {{ ins.severity_counts.medium }}<span class="text-dim" style="font-size:.7rem; font-weight:400">건</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="background:var(--bg); padding:.6rem .75rem; border-radius:.4rem; border-left:3px solid var(--accent);">
+          <div class="text-dim" style="font-size:.7rem">타임라인 이벤트</div>
+          <div style="font-size:1.4rem; font-weight:700; color:var(--accent);">
+            {{ result.timeline_total }}<span class="text-dim" style="font-size:.7rem; font-weight:400">건</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추가 통계 -->
+    <div class="row g-2">
+      <div class="col-md-3">
+        <div class="text-dim small">활동 시간 범위</div>
+        <div style="font-size:.85rem;">
+          <i class="bi bi-clock-history text-accent me-1"></i>
+          {% if ins.time_range.start %}{{ ins.time_range.start }}<br>
+          <span class="text-dim small">→ {{ ins.time_range.end }} ({{ ins.time_range.span_text }})</span>
+          {% else %}<span class="text-dim">시간 정보 없음</span>{% endif %}
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-dim small">프로그램 실행 총횟수</div>
+        <div style="font-size:1.3rem; font-weight:700; color:var(--text);"><i class="bi bi-fast-forward-fill text-accent me-1"></i>{{ ins.pf_total_runs }}<span class="text-dim small ms-1">회</span></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-dim small">USB 고유 장치</div>
+        <div style="font-size:1.3rem; font-weight:700; color:var(--text);"><i class="bi bi-usb-symbol text-info me-1"></i>{{ ins.unique_usb_devices }}<span class="text-dim small ms-1">대</span></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-dim small">사용자 프로필</div>
+        <div style="font-size:1.3rem; font-weight:700; color:var(--text);"><i class="bi bi-person-fill text-warning me-1"></i>{{ ins.user_count }}<span class="text-dim small ms-1">명</span></div>
+      </div>
+    </div>
+
+    {% if ins.top_executables %}
+    <div class="mt-3">
+      <div class="text-dim small mb-1">가장 많이 실행된 프로그램 Top {{ ins.top_executables|length }}</div>
+      <div class="d-flex flex-wrap gap-1">
+        {% for exe, cnt in ins.top_executables %}
+        <span class="tag" style="background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.25); font-size:.78rem; padding:.2rem .55rem;">
+          <code style="color:var(--accent)">{{ exe }}</code>
+          <span class="text-dim ms-1">×{{ cnt }}</span>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 의심 행위 발견 (Findings) -->
+  {% if ins.findings %}
+  <div class="tool-panel mb-3" style="border-left:4px solid #ef4444;">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-shield-exclamation" style="font-size:1.4rem; color:#ef4444"></i>
+      <h6 class="panel-title mb-0">의심 행위 발견 ({{ ins.findings|length }}건)</h6>
+      <span class="text-dim small ms-auto">MITRE ATT&CK 기반 IOC·LOLBin 탐지</span>
+    </div>
+    <div class="row g-2">
+      {% for f in ins.findings %}
+      <div class="col-12 col-lg-6">
+        <div style="background:var(--bg); padding:.75rem; border-radius:.4rem; border-left:3px solid {{ sev_colors[f.severity] }};">
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <span class="tag" style="background:{{ sev_colors[f.severity] }}; color:#fff; font-size:.7rem; font-weight:700;">{{ sev_labels[f.severity] }}</span>
+            <strong style="font-size:.92rem;">{{ f.title }}</strong>
+            <a href="https://attack.mitre.org/techniques/{{ f.mitre|replace('.', '/') }}/" target="_blank" rel="noopener"
+               class="ms-auto text-decoration-none" style="font-size:.72rem; color:var(--accent); border:1px solid rgba(0,212,255,.3); padding:.05rem .35rem; border-radius:.25rem;">
+              <i class="bi bi-link-45deg"></i>{{ f.mitre }}
+            </a>
+          </div>
+          <div class="text-dim small" style="line-height:1.4;">{{ f.detail }}</div>
+          <div class="mt-2 p-2" style="background:rgba(0,0,0,.3); border-radius:.3rem; font-family:monospace; font-size:.7rem; color:#fbbf24; word-break:break-all; max-height:80px; overflow-y:auto;">
+            {{ f.evidence }}
+          </div>
+          <div class="text-dim mt-1" style="font-size:.68rem;">
+            <i class="bi bi-file-earmark-text me-1"></i>{{ f.source }} · <span style="color:#a78bfa">{{ f.category }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-dim small mt-3 pt-2" style="border-top:1px solid var(--border); font-size:.75rem;">
+      <i class="bi bi-info-circle me-1"></i>
+      탐지 기준: <a href="https://lolbas-project.github.io/" target="_blank" class="text-accent">LOLBAS</a> +
+      <a href="https://attack.mitre.org/" target="_blank" class="text-accent">MITRE ATT&CK</a> +
+      SANS DFIR 표준 PowerShell IOC 패턴. 정상 시스템에서도 발생 가능하므로 맥락과 함께 판단하세요.
+    </div>
+  </div>
+  {% else %}
+  <div class="tool-panel mb-3" style="border-left:4px solid #22c55e;">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-shield-check" style="font-size:1.4rem; color:#22c55e"></i>
+      <strong>알려진 의심 패턴 미발견</strong>
+      <span class="text-dim small ms-2">— LOLBin·PowerShell IOC·랜섬웨어 표지 등이 검출되지 않았습니다. 다만 정교한 공격은 자동 탐지를 우회할 수 있어 타임라인 수동 검토 권장.</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if ins.usb_device_list %}
+  <div class="tool-panel mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <i class="bi bi-usb-symbol text-info" style="font-size:1.2rem"></i>
+      <h6 class="panel-title mb-0">연결 USB·저장장치 ({{ ins.unique_usb_devices }}대)</h6>
+    </div>
+    <div style="max-height:180px; overflow-y:auto; font-family:monospace; font-size:.76rem;">
+      {% for dev in ins.usb_device_list %}
+      <div style="padding:.15rem .3rem; border-bottom:1px solid var(--border);">{{ dev }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <!-- 인벤토리 카드 -->
+  <div class="row g-2 mb-3">
+    {% for kind, label, icon, color, count in result.kinds %}
+    <div class="col-md-6 col-lg-4 col-xl-3">
+      <div class="tool-panel h-100" style="padding:.75rem; border-left:3px solid {% if count > 0 %}{{ color }}{% else %}#374151{% endif %};">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi {{ icon }}" style="font-size:1.1rem; color:{% if count > 0 %}{{ color }}{% else %}#6b7280{% endif %};"></i>
+          <strong style="font-size:.82rem; color:{% if count > 0 %}var(--text){% else %}#6b7280{% endif %};">{{ label }}</strong>
+          <span class="ms-auto" style="font-size:.9rem; font-weight:700; color:{% if count > 0 %}{{ color }}{% else %}#6b7280{% endif %};">
+            {% if count > 0 %}{{ count }}{% else %}<span style="font-size:.7rem">없음</span>{% endif %}
+          </span>
+        </div>
+        {% if count == 0 %}
+        <div class="text-dim small" style="font-size:.72rem">ZIP에 포함되지 않음</div>
+        {% else %}
+        <div class="text-dim small" style="font-size:.72rem">{{ count }}개 발견</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <ul class="nav nav-tabs mb-3" id="triageTabs" style="border-color:var(--border);">
+    <li class="nav-item"><a class="nav-link active text-accent" data-bs-toggle="tab" href="#tab-timeline"><i class="bi bi-clock-history me-1"></i>통합 타임라인 ({{ result.timeline_total }})</a></li>
+    <li class="nav-item"><a class="nav-link text-dim" data-bs-toggle="tab" href="#tab-parsed"><i class="bi bi-cpu me-1"></i>파싱 결과</a></li>
+    <li class="nav-item"><a class="nav-link text-dim" data-bs-toggle="tab" href="#tab-inventory"><i class="bi bi-folder me-1"></i>전체 파일 목록</a></li>
+    {% if result.parse_errors %}<li class="nav-item"><a class="nav-link text-warning" data-bs-toggle="tab" href="#tab-errors"><i class="bi bi-exclamation-triangle me-1"></i>오류 ({{ result.parse_errors|length }})</a></li>{% endif %}
+  </ul>
+
+  <div class="tab-content">
+    <!-- 타임라인 -->
+    <div class="tab-pane fade show active" id="tab-timeline">
+      {% if result.timeline %}
+      <div class="d-flex gap-1 mb-2 flex-wrap" style="font-size:.74rem;">
+        <span class="text-dim">필터:</span>
+        <button class="btn btn-sm py-0 px-2" style="font-size:.7rem; background:rgba(220,38,38,.15); border:1px solid #dc2626; color:#fff;" onclick="filterTL('critical')">치명만</button>
+        <button class="btn btn-sm py-0 px-2" style="font-size:.7rem; background:rgba(239,68,68,.15); border:1px solid #ef4444; color:#fff;" onclick="filterTL('high')">고위험만</button>
+        <button class="btn btn-sm py-0 px-2" style="font-size:.7rem; background:rgba(245,158,11,.15); border:1px solid #f59e0b; color:#fff;" onclick="filterTL('medium')">중간 이상</button>
+        <button class="btn btn-sm py-0 px-2 btn-outline-secondary" style="font-size:.7rem;" onclick="filterTL('')">전체</button>
+      </div>
+      <div class="tool-panel" style="padding:0;">
+        <table class="table table-sm mb-0" style="font-size:.82rem;" id="tlTable">
+          <thead style="position:sticky; top:0; background:var(--bg-card); z-index:1;">
+            <tr class="text-dim"><th style="width:30px"></th><th style="width:170px">시각</th><th style="width:140px">소스</th><th>이벤트</th></tr>
+          </thead>
+          <tbody>
+            {% set sev_bg = {'critical':'rgba(220,38,38,.15)','high':'rgba(239,68,68,.10)','medium':'rgba(245,158,11,.08)','low':'','info':''} %}
+            {% set sev_dot = {'critical':'#dc2626','high':'#ef4444','medium':'#f59e0b','low':'#3b82f6','info':'#6b7280'} %}
+            {% for e in result.timeline %}
+            <tr data-sev="{{ e.severity or 'info' }}" style="background:{{ sev_bg[e.severity or 'info'] }};">
+              <td style="text-align:center"><span style="display:inline-block; width:.6rem; height:.6rem; border-radius:50%; background:{{ sev_dot[e.severity or 'info'] }};"></span></td>
+              <td style="font-family:monospace; white-space:nowrap;"><i class="bi {{ e.icon }} me-1" style="opacity:.6;"></i>{{ e.time }}</td>
+              <td><span class="tag" style="font-size:.7rem">{{ e.source }}</span></td>
+              <td>{{ e.event }}{% if e.mitre %} <a href="https://attack.mitre.org/techniques/{{ e.mitre|replace('.', '/') }}/" target="_blank" style="font-size:.68rem; color:#a78bfa; text-decoration:none; border:1px solid rgba(167,139,250,.3); padding:0 .3rem; border-radius:.2rem; margin-left:.3rem;">{{ e.mitre }}</a>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <script>
+        function filterTL(sev) {
+          const order = {'critical':0,'high':1,'medium':2,'low':3,'info':4};
+          document.querySelectorAll('#tlTable tbody tr').forEach(r => {
+            if (!sev) { r.style.display=''; return; }
+            const ts = r.dataset.sev || 'info';
+            if (sev === 'medium') r.style.display = (order[ts] <= 2) ? '' : 'none';
+            else r.style.display = (ts === sev) ? '' : 'none';
+          });
+        }
+      </script>
+      {% if result.timeline_total > 500 %}
+      <div class="text-dim small mt-2 text-center">처음 500건만 표시 (전체 {{ result.timeline_total }}건)</div>
+      {% endif %}
+      {% else %}
+      <div class="tool-panel text-center text-dim p-5">시간 정보가 있는 아티팩트가 없습니다.</div>
+      {% endif %}
+    </div>
+
+    <!-- 파싱 결과 -->
+    <div class="tab-pane fade" id="tab-parsed">
+      {% set order = ['registry_hive','registry_ntuser','registry_usrclass','amcache','prefetch','lnk','usb_log','powershell','eventlog','jumplist','mft','usnjrnl'] %}
+      {% set kind_labels = {'registry_hive':'레지스트리 하이브','registry_ntuser':'NTUSER.DAT','registry_usrclass':'UsrClass.dat','amcache':'Amcache.hve','prefetch':'Prefetch','lnk':'LNK','usb_log':'setupapi','powershell':'PowerShell','eventlog':'EVTX','jumplist':'JumpList','mft':'$MFT','usnjrnl':'$UsnJrnl'} %}
+      {% for kind in order %}
+        {% set items = result.parsed[kind] %}
+        {% if items %}
+        <div class="tool-panel mb-3">
+          <h6 class="panel-title"><i class="bi bi-chevron-right me-1"></i>{{ kind_labels[kind] }} ({{ items|length }})</h6>
+          {% if result.artifact_explain and result.artifact_explain[kind] %}
+          {% set ax = result.artifact_explain[kind] %}
+          <div class="mb-2 p-2" style="background:rgba(0,212,255,.04); border:1px solid rgba(0,212,255,.15); border-radius:.35rem; font-size:.78rem; line-height:1.55;">
+            <div><i class="bi bi-info-circle text-accent me-1"></i><strong>이게 뭐야?</strong> <span class="text-dim">{{ ax.what }}</span></div>
+            <div class="mt-1"><i class="bi bi-bullseye me-1" style="color:#f59e0b"></i><strong>왜 중요해?</strong> <span class="text-dim">{{ ax.why }}</span></div>
+            <div class="mt-1 text-dim" style="font-size:.72rem;"><i class="bi bi-geo-alt me-1"></i>원본 위치: <code>{{ ax.where }}</code></div>
+          </div>
+          {% endif %}
+          {% for item in items %}
+            <div class="p-2 mb-2" style="background:var(--bg); border-radius:.4rem; border:1px solid var(--border);">
+              {% if item.error %}
+                <strong>{{ item.filename }}</strong>
+                <div class="text-danger small mt-1"><i class="bi bi-x-circle me-1"></i>{{ item.error }}</div>
+              {% elif kind == 'prefetch' %}
+                <div class="d-flex justify-content-between flex-wrap">
+                  <strong style="color:var(--accent)">{{ item.executable }}</strong>
+                  <span><span class="text-dim">실행 </span><strong style="color:#f59e0b">{{ item.run_count }}회</strong></span>
+                </div>
+                <div class="text-dim small">{{ item.version }} · 해시 {{ item.hash }}</div>
+                {% if item.last_runs %}<div class="small mt-1 text-dim">마지막 실행: {{ item.last_runs|join(' / ') }}</div>{% endif %}
+                {% if item.files %}<div class="small mt-1 text-dim">참조 파일 {{ item.files|length }}개</div>{% endif %}
+              {% elif kind == 'lnk' %}
+                <strong>{{ item.filename }}</strong>
+                <div class="text-dim small">대상: <code>{{ item.target }}</code></div>
+                {% if item.mac_address %}<div class="text-warning small">MAC: {{ item.mac_address }}</div>{% endif %}
+                <div class="text-dim small">생성: {{ item.create_time }} · 수정: {{ item.write_time }}</div>
+              {% elif kind in ('registry_hive','registry_ntuser','registry_usrclass','amcache') %}
+                <div class="d-flex justify-content-between flex-wrap">
+                  <strong>{{ item.filename }}</strong>
+                  <span class="text-dim small">{{ item.format }}</span>
+                </div>
+                <div class="d-flex gap-3 mt-1 small">
+                  <span><span class="text-dim">키 </span><strong style="color:var(--accent)">{{ "{:,}".format(item.total_keys) }}</strong></span>
+                  <span><span class="text-dim">값 </span><strong style="color:var(--accent)">{{ "{:,}".format(item.total_values) }}</strong></span>
+                  <span><span class="text-dim">포렌식 발견 </span><strong style="color:#f59e0b">{{ item.findings }}</strong></span>
+                </div>
+              {% elif kind == 'usb_log' %}
+                <strong>{{ item.filename }}</strong>
+                <div class="text-dim small">USB/저장장치 이벤트 {{ item.event_count }}건</div>
+                {% if item.usb_events %}
+                <div class="mt-2 small" style="max-height:200px; overflow-y:auto;">
+                  {% for ue in item.usb_events[:30] %}
+                  <div style="font-family:monospace; padding:.1rem 0;"><span class="text-accent">{{ ue.time }}</span> {{ ue.device[:80] }}</div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              {% elif kind == 'powershell' %}
+                <strong>{{ item.filename }}</strong>
+                <span class="text-dim small">— 명령 {{ item.command_count }}건</span>
+                {% if item.commands %}
+                <div class="mt-2 small" style="max-height:250px; overflow-y:auto; font-family:monospace; font-size:.78rem;">
+                  {% for cmd in item.commands %}
+                  <div style="padding:.1rem .3rem; border-bottom:1px solid var(--border);">{{ cmd }}</div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              {% elif kind == 'eventlog' %}
+                <strong>{{ item.filename }}</strong>
+                <span class="text-dim small">— 약 {{ item.estimated_chunks }} 청크</span>
+                <div class="text-dim small mt-1">{{ item.note }}</div>
+              {% else %}
+                <strong>{{ item.filename }}</strong>
+                <div class="text-dim small">{{ item.note or item.size ~ ' bytes' }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- 파일 목록 -->
+    <div class="tab-pane fade" id="tab-inventory">
+      {% for kind, label, icon, color, count in result.kinds %}
+        {% if count > 0 %}
+        <div class="tool-panel mb-2">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi {{ icon }}" style="color:{{ color }};"></i>
+            <strong>{{ label }}</strong>
+            <span class="text-dim small">({{ count }}개)</span>
+          </div>
+          <div style="max-height:200px; overflow-y:auto; font-family:monospace; font-size:.76rem;">
+            {% for item in result.inventory[kind] %}
+            <div style="padding:.1rem .3rem; border-bottom:1px solid var(--border);">
+              {{ item.path }} <span class="text-dim ms-2">({{ item.size }} B)</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- 오류 -->
+    {% if result.parse_errors %}
+    <div class="tab-pane fade" id="tab-errors">
+      <div class="tool-panel">
+        {% for err in result.parse_errors %}
+        <div class="small mb-1 text-warning"><i class="bi bi-exclamation-triangle me-1"></i>{{ err }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if result.human_summary %}
+  {% set hs = result.human_summary %}
+  {% set sev_colors = {'critical':'#dc2626','high':'#ef4444','medium':'#f59e0b','low':'#3b82f6','info':'#6b7280'} %}
+  {% set sev_bg     = {'critical':'rgba(220,38,38,.10)','high':'rgba(239,68,68,.08)','medium':'rgba(245,158,11,.06)','low':'rgba(59,130,246,.05)','info':''} %}
+  {% set sev_labels = {'critical':'치명','high':'고위험','medium':'중간','low':'낮음','info':'정보'} %}
+
+  <!-- 사람이 읽기 좋은 요약 영역 -->
+  <div class="mt-5 pt-3" style="border-top:2px dashed var(--border);">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <i class="bi bi-book-half text-accent" style="font-size:1.8rem;"></i>
+      <div>
+        <h3 style="margin:0; font-size:1.4rem;">사건 요약 (사람이 읽기 좋은 버전)</h3>
+        <div class="text-dim small">기술 용어를 줄이고 자연어로 풀어 쓴 사건 보고서입니다.</div>
+      </div>
+    </div>
+
+    <!-- 종합 판단 (Verdict) -->
+    <div class="tool-panel mb-3" style="border-left:6px solid {{ hs.verdict.color }}; background:linear-gradient(90deg, {{ hs.verdict.color }}15, transparent);">
+      <div class="d-flex align-items-center gap-3">
+        <div style="font-size:2rem; line-height:1;">{{ hs.verdict.title[:2] }}</div>
+        <div>
+          <div style="font-size:1.2rem; font-weight:700; color:{{ hs.verdict.color }};">{{ hs.verdict.title[2:].strip() }}</div>
+          <div class="text-dim mt-1" style="font-size:.92rem; line-height:1.55;">{{ hs.verdict.message }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 자연어 서술 -->
+    <div class="tool-panel mb-3">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-chat-square-text-fill text-accent"></i>
+        <strong>한 문단으로 보는 이 시스템</strong>
+      </div>
+      {% for n in hs.narrative %}
+      <div class="d-flex align-items-start gap-2 mb-2" style="line-height:1.65;">
+        <i class="bi {{ n.icon }} mt-1" style="color:{{ n.color }}; font-size:1.05rem; flex-shrink:0;"></i>
+        <div style="font-size:.95rem;">{{ n.text | safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 일별 사건 일지 -->
+    {% if hs.daily_groups %}
+    <div class="tool-panel mb-3">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-calendar-event-fill text-accent"></i>
+        <strong>날짜별 사건 일지</strong>
+        <span class="text-dim small ms-2">— 의미있는 사건 {{ hs.key_event_count }}건을 날짜별로 묶었습니다</span>
+      </div>
+
+      {% for grp in hs.daily_groups %}
+      <div class="mb-3" style="background:var(--bg); border-radius:.5rem; overflow:hidden; border-left:4px solid {{ sev_colors[grp.worst_severity] }};">
+        <div class="d-flex align-items-center gap-3 px-3 py-2" style="background:{{ sev_colors[grp.worst_severity] }}22;">
+          <div style="font-size:1.05rem; font-weight:700; color:{{ sev_colors[grp.worst_severity] }};">
+            <i class="bi bi-calendar3 me-1"></i>{{ grp.date_ko }}
+          </div>
+          <span class="tag" style="background:{{ sev_colors[grp.worst_severity] }}; color:#fff; font-size:.7rem;">
+            최고 심각도: {{ sev_labels[grp.worst_severity] }}
+          </span>
+          <span class="ms-auto text-dim small">총 {{ grp.count }}건 — {{ grp.category_summary }}</span>
+        </div>
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <thead>
+            <tr style="background:var(--bg-card); color:var(--text-dim); font-size:.74rem;">
+              <th style="width:32px;"></th>
+              <th style="width:90px;">시각</th>
+              <th style="width:140px;">분류</th>
+              <th>무슨 일이 있었나</th>
+              <th style="width:90px;">MITRE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in grp.events %}
+            <tr style="background:{{ sev_bg[e.severity] }};">
+              <td style="text-align:center;">
+                <i class="bi {{ e.icon }}" style="color:{{ sev_colors[e.severity] }};"></i>
+              </td>
+              <td style="font-family:monospace; white-space:nowrap; color:{{ sev_colors[e.severity] }};">
+                {{ e.clock_ko or '-' }}
+              </td>
+              <td>
+                <span class="tag" style="background:{{ sev_colors[e.severity] }}22; color:{{ sev_colors[e.severity] }}; font-size:.7rem; border:1px solid {{ sev_colors[e.severity] }}44;">
+                  {{ sev_labels[e.severity] }}
+                </span>
+                <span class="text-dim small ms-1">{{ e.category_ko }}</span>
+              </td>
+              <td>
+                <div><strong>{{ e.title_ko }}</strong></div>
+                <div class="text-dim small">{{ e.description }}</div>
+                {% if e.evidence %}
+                <div class="text-dim mt-1" style="font-size:.7rem; font-family:monospace; opacity:.7;">
+                  └ {{ e.evidence }}
+                </div>
+                {% endif %}
+              </td>
+              <td>
+                {% if e.mitre %}
+                <a href="https://attack.mitre.org/techniques/{{ e.mitre|replace('.', '/') }}/" target="_blank" rel="noopener"
+                   style="text-decoration:none; color:#a78bfa; font-size:.72rem; border:1px solid rgba(167,139,250,.3); padding:.1rem .3rem; border-radius:.25rem;">
+                  {{ e.mitre }}
+                </a>
+                {% else %}<span class="text-dim small">-</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+
+      {% if hs.key_event_count > 200 %}
+      <div class="text-dim small text-center mt-2">표시 200건 — 전체 {{ hs.key_event_count }}건. 상단 "통합 타임라인" 탭에서 전체 확인.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 다음 단계 가이드 -->
+    <div class="tool-panel mb-3" style="border-left:4px solid var(--accent);">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-signpost-2-fill text-accent"></i>
+        <strong>다음 단계 — 무엇을 할까요?</strong>
+      </div>
+      <ol class="text-dim mb-0" style="font-size:.88rem; line-height:1.7; padding-left:1.2rem;">
+        {% if hs.verdict.level in ('critical','high') %}
+        <li><strong style="color:#ef4444;">즉시:</strong> 네트워크 격리 (LAN 케이블 분리·WiFi off) + 전원 끄지 않은 채 휘발성 정보 보존</li>
+        <li><strong>증거 보존:</strong> <a href="/tools/scripts" class="text-accent">RAM 덤프</a>와 <a href="/tools/scripts" class="text-accent">디스크 이미저</a>로 정식 사본 확보</li>
+        <li><strong>심층 분석:</strong> 위 표의 의심 명령을 <a href="/tools/strings" class="text-accent">문자열 추출</a>로 디코딩, <a href="/tools/registry" class="text-accent">레지스트리 분석</a>으로 지속성 키 확인</li>
+        <li><strong>보고:</strong> 사내 CSIRT·KISA 침해사고 신고센터(118)에 보고 검토</li>
+        {% elif hs.verdict.level == 'medium' %}
+        <li>의심 항목별로 사용자 면담 또는 정상 업무 기록과 대조</li>
+        <li>같은 사용자의 다른 PC·서버 로그도 확인 (계정 도용 가능성)</li>
+        <li>탐지 룰 튜닝 — 정상이면 화이트리스트, 의심 지속되면 정식 조사</li>
+        {% else %}
+        <li>표적·내부자 위협 가능성을 배제하지 못하므로 <a href="/tools/log" class="text-accent">로그 분석</a>·메모리 분석을 보조 수단으로 활용</li>
+        <li>주기적 트리아지(예: 월 1회) 자동화로 baseline 확립</li>
+        <li>중요 시스템은 EDR/SIEM 도입 검토</li>
+        {% endif %}
+      </ol>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

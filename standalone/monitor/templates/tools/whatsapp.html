@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">WhatsApp DB</span></div>
+<h1 class="page-title"><i class="bi bi-whatsapp me-2 text-accent"></i>WhatsApp DB</h1>
+<p class="page-sub">msgstore.db 평문/crypt14/15 분석.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<input type="text" name="key" class="form-control mb-3" placeholder="키 (선택, 64자 hex)" style="font-family:monospace;">
+<button class="btn btn-accent w-100"><i class="bi bi-whatsapp me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}<div class="tool-panel mb-2">
+<h6 class="panel-title">{{ result.filename }}</h6>
+<div class="text-dim small mb-2">{{ "{:,}".format(result.size) }} B · {{ result.format }}</div>
+{% if result.tables %}<div><strong>테이블 ({{ result.tables|length }})</strong>
+<div class="mt-1">{% for t in result.tables %}<code class="me-1 mb-1 d-inline-block">{{ t }}</code>{% endfor %}</div></div>{% endif %}
+{% if result.msg_count %}<div class="mt-2"><strong>총 메시지:</strong> {{ "{:,}".format(result.msg_count) }}</div>{% endif %}
+{% if result.note %}<div class="mt-2 text-dim small" style="white-space:pre-wrap;">{{ result.note }}</div>{% endif %}
+</div>
+{% if result.messages %}<div class="tool-panel"><h6 class="panel-title">최근 100건</h6>
+<div style="max-height:500px; overflow-y:auto;"><table class="table table-sm" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>시각</th><th>채팅</th><th>내용</th></tr></thead><tbody>
+{% for m in result.messages %}<tr>
+<td><code style="font-size:.7rem;">{{ m.time[:19] }}</code></td>
+<td style="font-size:.72rem;">{{ m.chat[:30] }}{% if m.from_me %} (나){% endif %}</td>
+<td style="word-break:break-all;">{{ m.text }}</td>
+</tr>{% endfor %}</tbody></table></div></div>{% endif %}
+{% endif %}</div>{% endblock %}

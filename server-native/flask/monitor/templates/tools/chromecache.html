@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Chrome Cache</span></div>
+<h1 class="page-title"><i class="bi bi-browser-chrome me-2 text-accent"></i>Chrome Cache</h1>
+<p class="page-sub">data_*·f_* 캐시 파일</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required><button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }}</h6>
+<div><strong>크기:</strong> {{ "{:,}".format(result.size) }} B</div>
+{% if result.format %}<div><strong>포맷:</strong> {{ result.format }}</div>{% endif %}
+{% if result.version %}<div><strong>버전:</strong> {{ result.version }}</div>{% endif %}
+{% if result.fetch_count %}<div><strong>fetch:</strong> {{ result.fetch_count }}</div>{% endif %}
+{% if result.last_fetch %}<div><strong>마지막 fetch:</strong> {{ result.last_fetch }}</div>{% endif %}
+{% if result.url_key %}<div><strong>URL key:</strong> <code style="word-break:break-all;">{{ result.url_key }}</code></div>{% endif %}
+{% if result.urls %}<div class="mt-2"><strong>URL:</strong><br>{% for u in result.urls %}<code class="d-block" style="font-size:.72rem; word-break:break-all;">{{ u }}</code>{% endfor %}</div>{% endif %}
+{% if result.strings %}<div class="mt-2"><strong>문자열:</strong>
+<div style="max-height:300px; overflow-y:auto; font-family:monospace; font-size:.72rem; background:var(--bg); padding:.4rem;">
+{% for s in result.strings %}<div>{{ s }}</div>{% endfor %}</div></div>{% endif %}
+</div>{% endif %}</div>{% endblock %}

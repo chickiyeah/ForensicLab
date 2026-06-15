@@ -1,0 +1,35 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">EVTX</span></div>
+<h1 class="page-title"><i class="bi bi-journal-text me-2 text-accent"></i>EVTX 이벤트 로그 분석</h1>
+<p class="page-sub">Windows .evtx 파일을 파싱하여 이벤트 ID·시각·채널·메시지를 추출하고 상위 이벤트를 통계로 표시합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-upload me-2"></i>EVTX 파일 업로드</h6>
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept=".evtx" required>
+<div class="form-hint mb-3">C:\Windows\System32\winevt\Logs\*.evtx</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 align-items-center mb-3 flex-wrap"><strong>{{ result.filename }}</strong><span class="text-dim small">{{ "{:,}".format(result.file_size) }} B · {{ result.total }}개 이벤트</span><a href="/tools/evtx" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+<div class="row g-3 mb-3"><div class="col-md-5"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-bar-chart me-2"></i>상위 이벤트 ID</h6>
+<table class="table table-sm" style="font-size:.82rem;"><thead><tr class="text-dim"><th>EID</th><th>개수</th><th>설명</th></tr></thead><tbody>
+{% set eid_desc = {'4624':'로그온 성공','4625':'로그온 실패','4634':'로그오프','4648':'명시적 자격 로그온','4672':'특권 할당','4688':'프로세스 생성','4720':'사용자 생성','7045':'서비스 설치','1102':'로그 삭제','104':'로그 삭제','6005':'부팅','6006':'종료','1':'Sysmon ProcessCreate','3':'Sysmon NetworkConnect','7':'Sysmon ImageLoad','11':'Sysmon FileCreate','22':'Sysmon DnsQuery'} %}
+{% for eid, cnt in result.top_eids %}<tr><td><code style="color:var(--accent)">{{ eid }}</code></td><td><strong>{{ cnt }}</strong></td><td class="text-dim small">{{ eid_desc.get(eid, '') }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="col-md-7"><div class="tool-panel"><h6 class="panel-title"><i class="bi bi-list-task me-2"></i>이벤트 목록</h6>
+<div style="max-height:600px; overflow-y:auto; font-size:.78rem;">
+{% for e in result.events %}
+<details class="mb-1" style="background:var(--bg); border:1px solid var(--border); border-radius:.35rem;">
+<summary style="padding:.4rem .6rem; cursor:pointer;">
+<code style="color:var(--accent)">EID {{ e.eid }}</code> <span class="text-dim">{{ e.ts }}</span> <strong>{{ e.channel }}</strong></summary>
+<pre style="font-size:.7rem; padding:.5rem; max-height:300px; overflow:auto; margin:0; background:#0a0f1c;">{{ e.xml }}</pre>
+</details>
+{% endfor %}</div></div></div></div>
+{% endif %}
+</div>{% endblock %}

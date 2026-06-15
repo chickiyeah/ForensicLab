@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Volatility 3 풀 분석</span></div>
+<h1 class="page-title"><i class="bi bi-cpu-fill me-2 text-accent"></i>Volatility 3 풀 분석</h1>
+<p class="page-sub">메모리 덤프 → pslist·malfind·netscan·hivelist 등 23개 플러그인</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-8">
+<div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<label class="form-label-sm">실행할 플러그인 (다중 선택)</label>
+<div class="row" style="max-height:400px; overflow-y:auto;">
+{% for p, short, desc in plugins %}<div class="col-md-6 mb-1">
+<label style="font-size:.82rem;"><input type="checkbox" name="plugins" value="{{ p }}"
+{% if short in ('pslist','malfind','netscan','cmdline') %}checked{% endif %}>
+<strong>{{ short }}</strong> <span class="text-dim small">{{ desc }}</span></label>
+</div>{% endfor %}</div>
+<button class="btn btn-accent w-100 mt-3"><i class="bi bi-play me-1"></i>백그라운드 실행</button>
+</form><div class="text-dim small mt-2"><i class="bi bi-info-circle me-1"></i>
+대용량 메모리 덤프는 시간이 오래 걸립니다. 백그라운드 작업으로 처리됩니다.</div>
+</div></div></div>
+{% else %}
+<div class="alert alert-success">작업 시작됨: <a href="{{ result.redirect }}">{{ result.job_id }}</a></div>
+<script>setTimeout(()=>location.href='{{ result.redirect }}', 1500);</script>
+{% endif %}</div>{% endblock %}

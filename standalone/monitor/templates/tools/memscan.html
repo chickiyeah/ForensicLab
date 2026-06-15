@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">메모리 덤프 IOC 스캔</span></div>
+<h1 class="page-title"><i class="bi bi-memory me-2 text-accent"></i>메모리 덤프 IOC 스캔</h1>
+<p class="page-sub">RAW 메모리 덤프에서 URL·프로세스·자격증명·경로·IOC 추출.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form></div></div></div>
+{% else %}{% for r in result.files %}
+<div class="tool-panel mb-3"><h6 class="panel-title">{{ r.filename }}{% if r.format %} — <span class="text-dim">{{ r.format }}</span>{% endif %}</h6>
+{% if r.urls %}<div class="mb-2"><strong>URLs ({{ r.urls|length }})</strong>
+<div style="max-height:200px; overflow-y:auto; font-size:.72rem; background:var(--bg); padding:.4rem;">
+{% for u in r.urls %}<div style="word-break:break-all;">{{ u }}</div>{% endfor %}</div></div>{% endif %}
+{% if r.processes %}<div class="mb-2"><strong>프로세스 ({{ r.processes|length }})</strong>
+<div>{% for p in r.processes[:40] %}<code class="me-1 mb-1 d-inline-block" style="font-size:.72rem;">{{ p }}</code>{% endfor %}</div></div>{% endif %}
+{% if r.paths %}<div class="mb-2"><strong>경로 ({{ r.paths|length }})</strong>
+<div style="max-height:150px; overflow-y:auto; font-size:.72rem; background:var(--bg); padding:.4rem;">
+{% for p in r.paths %}<div style="word-break:break-all;">{{ p }}</div>{% endfor %}</div></div>{% endif %}
+{% if r.creds %}<div class="mb-2" style="border-left:3px solid #ef4444; padding-left:.5rem;">
+<strong class="text-danger">자격증명 단서 ({{ r.creds|length }})</strong>
+{% for c in r.creds %}<div style="font-family:monospace; font-size:.72rem; word-break:break-all;">{{ c }}</div>{% endfor %}</div>{% endif %}
+</div>{% endfor %}
+{% endif %}</div>{% endblock %}
