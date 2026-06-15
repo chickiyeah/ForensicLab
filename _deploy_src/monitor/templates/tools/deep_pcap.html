@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">딥 패킷 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-diagram-3 me-2 text-accent"></i>딥 패킷 분석</h1>
+    <p class="page-sub">pcap 을 L2~L4 로 디섹트하고 80여 종 프로토콜 파서(ICS/SCADA·IoT·웹·DB·VoIP)로 심층 디코드합니다. (최대 100 MB)</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>입력</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">pcap 파일</label>
+            <input type="file" name="file" class="form-control" accept=".pcap,.cap" required>
+            <div class="form-hint">libpcap(.pcap) 형식 — pcapng는 변환 필요</div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-play-fill me-1"></i>분석 시작
+          </button>
+        </form>
+      </div>
+      <div class="info-box mt-3">
+        <h6><i class="bi bi-shield-lock me-2"></i>탐지 프로토콜</h6>
+        <ul class="sig-list">
+          <li><b>ICS/SCADA</b> Modbus·DNP3·S7comm·IEC104</li>
+          <li><b>IoT</b> BACnet·MQTT·CoAP·SSDP</li>
+          <li><b>인프라</b> DNS·DHCP·NTP·SNMP·Syslog</li>
+          <li><b>웹/원격</b> HTTP·TLS·SSH·Telnet·RDP</li>
+          <li><b>DB</b> MySQL·PostgreSQL·MSSQL·Redis·Mongo</li>
+          <li><b>VoIP/VPN</b> SIP·IKE·WireGuard·OpenVPN</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-9">
+      {% if error %}
+      <div class="alert-error"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <span class="text-dim small"><i class="bi bi-file-earmark me-1"></i>{{ result.filename }}</span>
+          <span class="text-dim small ms-3"><i class="bi bi-collection me-1"></i>{{ "{:,}".format(result.total) }}개 패킷</span>
+          <span class="text-dim small ms-3"><i class="bi bi-diagram-2 me-1"></i>앱 프로토콜 {{ result.app_proto_count }}종</span>
+          {% if result.timespan %}
+          <span class="text-dim small ms-3"><i class="bi bi-clock me-1"></i>{{ result.timespan.duration }}s</span>
+          {% endif %}
+        </div>
+        {% if share_token %}
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')"><i class="bi bi-share me-1"></i>공유</button>
+          <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>PDF</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if result.highlights %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-shield-exclamation me-2"></i>보안 하이라이트 ({{ result.highlights|length }}건)</h6>
+        {% for h in result.highlights %}
+        <div class="d-flex align-items-start gap-2 mb-2" style="font-size:.86rem;">
+          {% if h.level == 'danger' %}
+          <span class="badge" style="background:#ef444422;color:#ef4444;border:1px solid #ef4444;">위험</span>
+          {% elif h.level == 'warn' %}
+          <span class="badge" style="background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b;">주의</span>
+          {% else %}
+          <span class="badge" style="background:#0d1a2d;color:var(--text-dim);border:1px solid var(--border);">정보</span>
+          {% endif %}
+          <span>{{ h.text }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <!-- 앱 프로토콜 분포 -->
+        <div class="col-md-5">
+          <div class="tool-panel h-100">
+            <h6 class="panel-title"><i class="bi bi-diagram-2 me-2"></i>앱 프로토콜</h6>
+            {% if result.app_dist %}
+            {% for label, cnt, cat in result.app_dist %}
+            <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:.86rem;">
+              <span>
+                <span class="badge" style="background:#0d1a2d;border:1px solid var(--accent);color:var(--accent);">{{ label }}</span>
+                {% if cat == 'ICS' %}<span class="badge ms-1" style="background:#ef444422;color:#ef4444;">ICS</span>
+                {% elif cat == 'IoT' %}<span class="badge ms-1" style="background:#f59e0b22;color:#f59e0b;">IoT</span>{% endif %}
+              </span>
+              <span>{{ "{:,}".format(cnt) }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-dim small mb-0">표준 포트 기반 앱 프로토콜이 식별되지 않았습니다.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- L4 + 포트 -->
+        <div class="col-md-3">
+          <div class="tool-panel h-100">
+            <h6 class="panel-title"><i class="bi bi-pie-chart me-2"></i>전송계층</h6>
+            {% for proto, cnt in result.l4_dist %}
+            <div class="d-flex justify-content-between mb-1" style="font-size:.83rem;">
+              <span class="text-dim">{{ proto }}</span>
+              <span>{{ "{:,}".format(cnt) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="tool-panel h-100">
+            <h6 class="panel-title"><i class="bi bi-hdd-network me-2"></i>상위 목적지 포트</h6>
+            {% for item in result.top_dst_ports %}
+            <div class="d-flex justify-content-between mb-1" style="font-size:.83rem;">
+              <span><span class="text-accent font-monospace">{{ item.port }}</span>{% if item.service %} <span class="text-dim small">{{ item.service }}</span>{% endif %}</span>
+              <span class="text-dim">{{ "{:,}".format(item.count) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-0">
+        <div class="col-md-6">
+          <div class="tool-panel h-100">
+            <h6 class="panel-title"><i class="bi bi-arrow-up-right me-2"></i>상위 출발지 IP</h6>
+            {% for ip, cnt in result.top_src_ips %}
+            <div class="d-flex justify-content-between mb-1" style="font-size:.83rem;">
+              <span class="text-accent font-monospace">{{ ip }}</span><span class="text-dim">{{ "{:,}".format(cnt) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="tool-panel h-100">
+            <h6 class="panel-title"><i class="bi bi-arrow-down-left me-2"></i>상위 목적지 IP</h6>
+            {% for ip, cnt in result.top_dst_ips %}
+            <div class="d-flex justify-content-between mb-1" style="font-size:.83rem;">
+              <span class="text-accent font-monospace">{{ ip }}</span><span class="text-dim">{{ "{:,}".format(cnt) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      {% if result.flows %}
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-shuffle me-2"></i>상위 플로우 ({{ result.flows|length }})</h6>
+        <div class="table-responsive">
+          <table class="table table-dark align-middle" style="font-size:.82rem;">
+            <thead><tr style="color:var(--text-dim);"><th>프로토콜</th><th>끝점 A</th><th>끝점 B</th><th class="text-end">패킷</th><th class="text-end">바이트</th><th class="text-end">지속(s)</th></tr></thead>
+            <tbody>
+              {% for fl in result.flows %}
+              <tr style="border-bottom:1px solid #0d1a2d;">
+                <td><span class="badge" style="background:#00d4ff22;color:var(--accent);">{{ fl.proto }}</span></td>
+                <td class="font-monospace text-dim">{{ fl.a }}</td>
+                <td class="font-monospace text-dim">{{ fl.b }}</td>
+                <td class="text-end">{{ "{:,}".format(fl.packets) }}</td>
+                <td class="text-end text-dim">{{ "{:,}".format(fl.bytes) }}</td>
+                <td class="text-end text-dim">{{ fl.dur if fl.dur is not none else '–' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if result.samples %}
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-search me-2"></i>심층 디코드 샘플</h6>
+        {% for label, recs in result.samples.items() %}
+        <div class="mb-3">
+          <div class="mb-2"><span class="badge" style="background:#0d1a2d;border:1px solid var(--accent);color:var(--accent);">{{ label }}</span></div>
+          {% for rec in recs %}
+          <div class="mb-2 p-2" style="background:#0a1322;border:1px solid var(--border);border-radius:6px;font-size:.8rem;">
+            <div class="text-dim font-monospace mb-1">{{ rec._src }} <i class="bi bi-arrow-right"></i> {{ rec._dst }}</div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for k, v in rec.items() %}{% if not k.startswith('_') %}
+              <span><span class="text-dim">{{ k }}=</span><span class="text-accent">{{ v }}</span></span>
+              {% endif %}{% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      {% if not error %}
+      <div class="empty-state">
+        <i class="bi bi-diagram-3"></i>
+        <p>pcap 파일을 업로드하면<br>프로토콜 심층 분석 결과가 표시됩니다.</p>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function copyShareLink(t) {
+  navigator.clipboard.writeText(location.origin + '/tools/share/' + t).then(function() {
+    event.target.innerHTML = '<i class="bi bi-check me-1"></i>복사됨';
+    setTimeout(function() { event.target.innerHTML = '<i class="bi bi-share me-1"></i>공유'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

@@ -262,6 +262,7 @@ _TOOL_CATALOG = [
     ('/tools/metadata',      '메타데이터 추출',  'EXIF·PDF·해시·카메라 정보',                  '기본',         '#a78bfa', 'bi-file-earmark-text',    False, 'metadata exif pdf'),
     ('/tools/timeline',      '타임라인 재구성',  'EXIF·PDF·LNK·Prefetch·EML·DOCX 통합',        '기본',         '#06b6d4', 'bi-clock-history',        False, 'timeline event'),
     ('/tools/pcap',          '패킷 분석',        'pcap 프로토콜·IP 통계',                      '기본',         '#06b6d4', 'bi-wifi',                 False, 'pcap network packet'),
+    ('/tools/deep-pcap',     '딥 패킷 분석',     'ICS·IoT·DB 80여종 프로토콜 디섹터',          '기본',         '#06b6d4', 'bi-diagram-3',            False, 'deep pcap protocol ics scada iot modbus dnp3 s7comm dns tls mqtt'),
     ('/tools/email',         '이메일 분석',      'EML/MSG/MBOX·스푸핑·헤더',                   '기본',         '#f59e0b', 'bi-envelope-open',        False, 'email eml msg mbox'),
     ('/tools/zipcrack',      'ZIP 암호 해제',    '사전·브루트포스',                            '기본',         '#ef4444', 'bi-file-earmark-zip',     False, 'zip password crack'),
     ('/tools/encrypt',       '파일 암호화',      'AES-256-GCM + PBKDF2',                       '기본',         '#a78bfa', 'bi-shield-lock',          False, 'aes encrypt'),
@@ -3164,3 +3165,5 @@ from monitor.views import tools_extra8  # noqa: E402, F401
 from monitor.views import tools_extra9  # noqa: E402, F401
 # 10차: AI 침입자 허니트랩 — LLM 에이전트 탐지·차단·박제 (프롬프트 인젝션 카나리)
 from monitor.views import tools_extra10  # noqa: E402, F401
+# 딥 패킷 분석 — forensiclab 라이브러리 기반 80여종 프로토콜 디섹터(ICS/SCADA·IoT·DB·VoIP)
+from monitor.views import tools_deep_pcap  # noqa: E402, F401
