@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">자동 분석</span></div>
+<h1 class="page-title"><i class="bi bi-magic me-2 text-accent"></i>자동 분석</h1>
+<p class="page-sub">파일 → 시그니처·엔트로피·IOC 자동 검사 후 추천</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" required>
+<button class="btn btn-accent w-100"><i class="bi bi-magic me-1"></i>자동 분석</button>
+</form></div></div></div>
+{% else %}{% for r in result.files %}<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ r.filename }} <span class="text-dim small">— 엔트로피 {{ r.entropy }} · IOC {{ r.ioc_count or 0 }}건</span></h6>
+<div class="text-dim small mb-2"><code>{{ r.sha256[:32] }}...</code></div>
+{% for m in r.recommendations %}<div class="d-flex gap-2 mb-1 p-2" style="background:var(--bg); border-radius:.3rem;">
+<a href="{{ m.url }}" class="btn btn-sm btn-accent">{{ m.tool }}</a><span>{{ m.label }}</span></div>{% endfor %}
+</div>{% endfor %}{% endif %}</div>{% endblock %}

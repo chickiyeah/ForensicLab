@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">얼굴·객체 인식</span></div>
+<h1 class="page-title"><i class="bi bi-person-bounding-box me-2 text-accent"></i>얼굴·객체 인식</h1>
+<p class="page-sub">OpenCV Haar Cascade 얼굴/눈 감지</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" accept="image/*" required>
+<button class="btn btn-accent w-100"><i class="bi bi-person me-1"></i>얼굴 감지</button>
+</form></div></div></div>
+{% else %}{% for r in result.files %}<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ r.filename }}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>
+{% else %}<div class="text-dim small">{{ r.image_size }} · 선명도 {{ r.sharpness }}{% if r.is_blurry %} (흐림){% endif %}</div>
+<div class="mt-2"><strong>{{ r.face_count }}개 얼굴 감지</strong></div>
+{% if r.faces %}<table class="table table-sm mt-2" style="font-size:.78rem;">
+<thead><tr class="text-dim"><th>#</th><th>위치 (x,y)</th><th>크기</th><th>눈 감지</th><th>이미지 점유율</th></tr></thead><tbody>
+{% for face in r.faces %}<tr><td>{{ loop.index }}</td>
+<td>({{ face.x }}, {{ face.y }})</td>
+<td>{{ face.w }}x{{ face.h }}</td>
+<td>{{ face.eyes }}</td>
+<td>{{ face.pct_of_image }}%</td></tr>{% endfor %}
+</tbody></table>{% endif %}
+{% endif %}</div>{% endfor %}{% endif %}</div>{% endblock %}

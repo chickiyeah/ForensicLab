@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">ALEAPP (Android 풀 분석)</span></div>
+<h1 class="page-title"><i class="bi bi-android2 me-2 text-accent"></i>ALEAPP (Android 풀 분석)</h1>
+<p class="page-sub">Android 추출 ZIP → 200+ 아티팩트 자동 파싱 (Sysdiagnose 수준)</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" accept=".zip,.tar" required>
+<div class="form-hint mb-3">Android 추출 ZIP/TAR (Magnet/Cellebrite/MSAB 또는 adb backup)</div>
+<button class="btn btn-accent w-100"><i class="bi bi-android2 me-1"></i>ALEAPP 실행</button>
+</form><div class="text-dim small mt-2">ALEAPP은 200+ 아티팩트 추출. 20분 이상 소요될 수 있음.</div>
+</div></div></div>
+{% else %}<div class="alert alert-success">백그라운드: <a href="{{ result.redirect }}">{{ result.job_id }}</a></div>
+<script>setTimeout(()=>location.href='{{ result.redirect }}', 1500);</script>{% endif %}
+</div>{% endblock %}

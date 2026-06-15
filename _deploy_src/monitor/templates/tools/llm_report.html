@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">LLM 자동 보고서</span></div>
+<h1 class="page-title"><i class="bi bi-robot me-2 text-accent"></i>LLM 자동 보고서</h1>
+<p class="page-sub">Claude API로 분석 결과 → 전문가 narrative 보고서</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel">
+<form method="POST"><label class="form-label-sm">Anthropic API 키 (또는 환경변수 ANTHROPIC_API_KEY)</label>
+<input type="password" name="api_key" class="form-control mb-2" placeholder="sk-ant-...">
+<label class="form-label-sm">분석 컨텍스트</label>
+<input type="text" name="context" class="form-control mb-2" value="디지털 포렌식 분석">
+<label class="form-label-sm">언어</label>
+<select name="language" class="form-select mb-2">
+<option value="한국어">한국어</option><option value="English">English</option>
+<option value="日本語">日本語</option><option value="中文">中文</option></select>
+<label class="form-label-sm">분석 데이터 (JSON / 텍스트)</label>
+<textarea name="analysis_data" class="form-control mb-3" rows="14" style="font-family:monospace; font-size:.72rem;" placeholder="포렌식 분석 결과 붙여넣기..." required></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-robot me-1"></i>보고서 생성</button>
+</form><div class="text-dim small mt-2">Claude API 사용. 비용: 입력 토큰당 ~$3/M, 출력 ~$15/M</div>
+</div></div>
+<div class="col-lg-7">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">{{ result.model }} 생성 보고서 ({{ result.language }})</h6>
+<div class="text-dim small mb-2">입력 {{ result.tokens_in }}T · 출력 {{ result.tokens_out }}T</div>
+<div style="background:var(--bg); padding:1rem; border-radius:.4rem; max-height:700px; overflow-y:auto; white-space:pre-wrap; font-size:.86rem; line-height:1.6;">{{ result.report }}</div>
+<div class="mt-2"><button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.querySelector('div[style*=overflow-y]').innerText)"><i class="bi bi-clipboard me-1"></i>복사</button></div>
+</div>{% endif %}</div></div></div>{% endblock %}

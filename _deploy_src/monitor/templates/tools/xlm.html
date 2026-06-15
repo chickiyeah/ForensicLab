@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Excel 4.0 XLM 매크로</span></div>
+<h1 class="page-title"><i class="bi bi-file-spreadsheet me-2 text-accent"></i>Excel 4.0 XLM 매크로</h1>
+<p class="page-sub">매크로 시트·CALL/EXEC 함수 탐지</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3"  required>
+<button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }}</h6>
+{% for k, v in result.items() %}{% if k not in ('filename','strings','urls','scripts','rust_sources','functions','types','suspicious_api','streams','capabilities','files','custom_actions') %}
+<div><strong>{{ k }}:</strong>
+{% if v is mapping %}<pre style="font-size:.72rem; background:var(--bg); padding:.4rem; margin:.2rem 0;">{{ v | tojson(indent=2) }}</pre>
+{% elif v is iterable and v is not string %}{% for x in v %}<code class="me-1">{{ x }}</code>{% endfor %}
+{% else %}<code style="word-break:break-all;">{{ v }}</code>{% endif %}</div>{% endif %}{% endfor %}
+{% if result.urls %}<div class="mt-2"><strong>URLs:</strong>
+<div style="max-height:200px; overflow-y:auto;">{% for u in result.urls %}<code class="d-block" style="font-size:.72rem; word-break:break-all;">{{ u }}</code>{% endfor %}</div></div>{% endif %}
+{% if result.suspicious_api %}<div class="mt-2 p-2" style="background:rgba(239,68,68,.08); border-radius:.4rem;"><strong class="text-danger">의심 API:</strong>
+{% for a in result.suspicious_api %}<code class="me-1">{{ a }}</code>{% endfor %}</div>{% endif %}
+{% if result.functions %}<div class="mt-2"><strong>함수:</strong><div style="max-height:200px; overflow-y:auto;">{% for f in result.functions %}<code class="me-1 mb-1 d-inline-block" style="font-size:.7rem;">{{ f }}</code>{% endfor %}</div></div>{% endif %}
+{% if result.types %}<div class="mt-2"><strong>타입:</strong><div style="max-height:200px; overflow-y:auto;">{% for t in result.types %}<code class="me-1 mb-1 d-inline-block" style="font-size:.7rem;">{{ t }}</code>{% endfor %}</div></div>{% endif %}
+{% if result.streams %}<div class="mt-2"><strong>스트림:</strong><table class="table table-sm" style="font-size:.74rem;">
+{% for s in result.streams %}<tr><td><code>{{ s.name }}</code></td><td>{{ s.size }}</td></tr>{% endfor %}</table></div>{% endif %}
+</div>{% endif %}</div>{% endblock %}

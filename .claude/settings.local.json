@@ -90,7 +90,8 @@
       "PowerShell(python E:\\\\forensic\\\\_pull.py)",
       "PowerShell(python E:\\\\forensic\\\\_root.py)",
       "PowerShell(python E:\\\\forensic\\\\_imgcheck.py)",
-      "PowerShell(python E:\\\\forensic\\\\_survey.py)"
+      "PowerShell(python E:\\\\forensic\\\\_survey.py)",
+      "Bash(awk -F/ '{print $1}')"
     ]
   }
 }

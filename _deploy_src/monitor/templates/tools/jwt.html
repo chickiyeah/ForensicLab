@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">JWT 디코더</span></div>
+<h1 class="page-title"><i class="bi bi-key-fill me-2 text-accent"></i>JWT 디코더</h1>
+<p class="page-sub">JSON Web Token Header·Payload·Signature 분해 및 알고리즘·만료·취약점 검사.</p>
+</div></div>
+<div class="container pb-5">
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-input-cursor-text me-2"></i>JWT 입력</h6>
+<form method="POST">
+<textarea name="token" class="form-control mb-3" rows="8" style="font-family:monospace; font-size:.75rem; word-break:break-all;" placeholder="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SIGNATURE">{{ token }}</textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-unlock me-1"></i>디코드</button>
+</form></div></div>
+<div class="col-lg-7">{% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+{% if result %}
+{% if result.warnings %}
+<div class="tool-panel mb-2">{% for w in result.warnings %}<div style="font-size:.82rem; padding:.1rem 0;">{{ w }}</div>{% endfor %}</div>
+{% endif %}
+<div class="tool-panel mb-2"><h6 class="panel-title">Header — <code style="color:var(--accent)">{{ result.alg }}</code></h6>
+<pre style="background:var(--bg); padding:.5rem; border-radius:.35rem; font-size:.78rem; margin:0;">{{ result.header | tojson(indent=2) }}</pre></div>
+<div class="tool-panel mb-2"><h6 class="panel-title">Payload</h6>
+<pre style="background:var(--bg); padding:.5rem; border-radius:.35rem; font-size:.78rem; margin:0; max-height:400px; overflow:auto;">{{ result.payload | tojson(indent=2) }}</pre></div>
+<div class="tool-panel"><h6 class="panel-title">Signature ({{ result.signature_len }} bytes)</h6>
+<code style="font-size:.72rem; word-break:break-all;">{{ result.signature_hex }}</code></div>
+{% endif %}
+</div></div></div>{% endblock %}

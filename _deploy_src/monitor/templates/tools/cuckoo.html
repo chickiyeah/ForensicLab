@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Cuckoo / CAPE 리포트</span></div>
+<h1 class="page-title"><i class="bi bi-bug-fill me-2 text-accent"></i>Cuckoo / CAPE 리포트</h1>
+<p class="page-sub">샌드박스 JSON 리포트 파싱 — 시그니처·프로세스·네트워크.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form></div></div></div>
+{% else %}{% for r in result.files %}
+<div class="tool-panel mb-3">
+<h6 class="panel-title">{{ r.filename }}{% if r.score is defined %} — 점수 {{ r.score }}/10{% endif %}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>{% else %}
+<table class="table table-sm" style="font-size:.82rem;">
+<tr><td class="text-dim">샘플</td><td><strong>{{ r.sample }}</strong></td></tr>
+<tr><td class="text-dim">MD5</td><td><code>{{ r.md5 }}</code></td></tr>
+<tr><td class="text-dim">SHA256</td><td><code style="font-size:.7rem; word-break:break-all;">{{ r.sha256 }}</code></td></tr>
+<tr><td class="text-dim">시작</td><td>{{ r.started }}</td></tr>
+<tr><td class="text-dim">지속시간</td><td>{{ r.duration }}초</td></tr>
+</table>
+{% if r.signatures %}<div class="mb-3"><h6 class="panel-title">시그니처 ({{ r.signatures|length }})</h6>
+{% for s in r.signatures %}<div class="p-2 mb-1" style="background:var(--bg); border-left:3px solid #ef4444;">
+<strong>{{ s.name }}</strong> <span class="text-dim small">sev={{ s.severity }}</span>
+<div class="small">{{ s.description }}</div></div>{% endfor %}</div>{% endif %}
+{% if r.domains %}<div class="mb-2"><strong>도메인</strong>
+{% for d in r.domains %}<code class="me-1 d-inline-block">{{ d }}</code>{% endfor %}</div>{% endif %}
+{% if r.hosts %}<div class="mb-2"><strong>호스트</strong>
+{% for h in r.hosts %}<code class="me-1 d-inline-block">{{ h }}</code>{% endfor %}</div>{% endif %}
+{% endif %}</div>{% endfor %}
+{% endif %}</div>{% endblock %}

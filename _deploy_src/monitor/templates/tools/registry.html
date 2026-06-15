@@ -1,0 +1,1718 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">레지스트리 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-diagram-2 me-2 text-accent"></i>레지스트리 분석</h1>
+    <p class="page-sub">Windows 레지스트리 하이브(NTUSER.DAT·SAM·SYSTEM 등) 및 .reg 텍스트 파일을 파싱하고 자동실행·USB·실행이력 등 포렌식 핵심 항목을 탐지합니다.</p>
+  </div>
+</div>
+
+<div class="container{% if result %}-fluid px-3{% endif %} pb-5">
+
+  {% if error %}
+  <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+  {% endif %}
+
+  {% if not result %}
+  <!-- ─────────── 업로드 폼 ─────────── -->
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-4">
+            <label class="form-label-sm">레지스트리 파일 선택</label>
+            <input type="file" name="file" multiple class="form-control" required>
+            <div class="form-hint mt-2 d-flex flex-wrap gap-1 align-items-center">
+              <span class="tag" style="font-size:.7rem;">NTUSER.DAT</span>
+              <span class="tag" style="font-size:.7rem;">SAM</span>
+              <span class="tag" style="font-size:.7rem;">SYSTEM</span>
+              <span class="tag" style="font-size:.7rem;">SOFTWARE</span>
+              <span class="tag" style="font-size:.7rem;">.reg</span>
+              <span class="text-dim" style="font-size:.76rem;">최대 200MB</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent w-100">
+            <i class="bi bi-search me-1"></i>분석 시작
+          </button>
+        </form>
+      </div>
+
+      <div class="row g-2 mt-2">
+        {% set cards = [
+          ('bi-person-fill','#00d4ff','NTUSER.DAT','사용자 프로필 하이브. 자동실행·최근문서·실행이력·USB 등 포함.'),
+          ('bi-hdd-fill','#a78bfa','SYSTEM','시스템 하이브. 서비스·드라이버·타임존·컴퓨터명 등.'),
+          ('bi-shield-lock-fill','#f59e0b','SAM','로컬 계정 목록·암호 해시 (관리자 권한 필요).'),
+          ('bi-app-indicator','#10b981','.reg 텍스트','regedit 내보내기 파일. UTF-16 LE 표준 형식.'),
+        ] %}
+        {% for icon, color, title, desc in cards %}
+        <div class="col-6">
+          <div style="padding:.75rem; background:var(--bg-card); border-radius:.5rem; border:1px solid var(--border);">
+            <div style="color:{{ color }}; font-size:.8rem; font-weight:600; margin-bottom:.3rem;">
+              <i class="bi {{ icon }} me-1"></i>{{ title }}
+            </div>
+            <div class="text-dim" style="font-size:.74rem;">{{ desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ─────────── 결과 ─────────── -->
+
+  <!-- 상단 통계 바 -->
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-file-earmark-binary" style="color:var(--accent);"></i>
+      <span style="font-weight:700;">{{ result.filename }}</span>
+      <span class="text-dim small">({{ result.format }})</span>
+    </div>
+    <div class="d-flex gap-3 ms-auto flex-wrap" style="font-size:.84rem;">
+      <span><span style="color:var(--accent); font-weight:700;">{{ "{:,}".format(result.total_keys) }}</span> <span class="text-dim">키</span></span>
+      <span><span style="color:var(--accent); font-weight:700;">{{ "{:,}".format(result.total_values) }}</span> <span class="text-dim">값</span></span>
+      <span><span style="color:{% if result.findings|length > 0 %}#f59e0b{% else %}var(--accent){% endif %}; font-weight:700;">{{ result.findings|length }}</span> <span class="text-dim">포렌식 항목</span></span>
+      {% if result.truncated %}
+      <span style="color:#f87171; font-size:.78rem;"><i class="bi bi-exclamation-triangle me-1"></i>200,000개 이상 — 일부 생략</span>
+      {% endif %}
+    </div>
+    <a href="/tools/registry" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>새 파일</a>
+  </div>
+
+  <!-- 포렌식 발견 -->
+  {% if result.findings %}
+  <div class="mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <span style="font-size:.82rem; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em;">
+        <i class="bi bi-exclamation-triangle me-1 text-warning"></i>포렌식 발견 항목
+      </span>
+      <span style="font-size:.75rem; color:var(--text-dim);">— 클릭하여 상세 확인</span>
+    </div>
+    <div class="row g-2" id="findingCards">
+      {% for f in result.findings %}
+      {% set sev_color = '#ef4444' if f.severity == 'high' else ('#f59e0b' if f.severity == 'medium' else '#6b7280') %}
+      {% set sev_bg = 'rgba(239,68,68,.08)' if f.severity == 'high' else ('rgba(245,158,11,.08)' if f.severity == 'medium' else 'rgba(107,114,128,.08)') %}
+      <div class="col-md-6 col-xl-4">
+        <div class="finding-card" style="border-color:{{ sev_color }}40; background:{{ sev_bg }};"
+             onclick="openFinding({{ loop.index0 }})">
+          <div class="d-flex align-items-start gap-2">
+            <div style="width:8px; height:8px; border-radius:50%; background:{{ sev_color }};
+                        flex-shrink:0; margin-top:.35rem;"></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:.84rem; color:var(--text);">
+                {{ f.category_ko }}
+              </div>
+              <div class="text-dim" style="font-size:.75rem; margin-top:.15rem; overflow:hidden;
+                           text-overflow:ellipsis; white-space:nowrap;"
+                   title="{{ f.key_path }}">{{ f.key_path }}</div>
+              <div style="font-size:.73rem; color:#6b7280; margin-top:.2rem;">
+                {{ f.description[:60] }}{% if f.description|length > 60 %}...{% endif %}
+              </div>
+              <div class="d-flex gap-2 mt-1" style="font-size:.72rem;">
+                {% if f.values %}<span style="color:var(--accent);">값 {{ f.values|length }}개</span>{% endif %}
+                {% if f.subkeys %}<span style="color:#a78bfa;">하위키 {{ f.subkeys|length }}개</span>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 메인 스플릿: 트리 + 값 -->
+  <div style="display:grid; grid-template-columns:380px 1fr; gap:0;
+              height:calc(100vh - 220px); min-height:500px;
+              border:1px solid var(--border); border-radius:.6rem; overflow:hidden;">
+
+    <!-- 왼쪽: 트리 -->
+    <div style="border-right:1px solid var(--border); background:var(--bg);
+                display:flex; flex-direction:column; min-height:0;">
+      <div style="padding:.6rem .75rem; border-bottom:1px solid var(--border);
+                  background:var(--bg-card); flex-shrink:0;">
+        <div class="position-relative mb-2">
+          <i class="bi bi-search position-absolute text-dim"
+             style="left:.55rem; top:50%; transform:translateY(-50%); font-size:.78rem;"></i>
+          <input type="text" id="treeSearch" class="form-control form-control-sm"
+                 placeholder="키 경로 검색 (부분 일치)..."
+                 style="padding-left:1.9rem; background:var(--bg); border-color:var(--border);">
+        </div>
+        <div class="position-relative">
+          <i class="bi bi-cursor-fill position-absolute text-accent"
+             style="left:.55rem; top:50%; transform:translateY(-50%); font-size:.78rem;"></i>
+          <input type="text" id="goPath" class="form-control form-control-sm"
+                 placeholder="정확한 경로 붙여넣기 → Enter (예: SOFTWARE\Microsoft\Windows\CurrentVersion\Run)"
+                 style="padding-left:1.9rem; background:rgba(0,212,255,.05);
+                        border-color:var(--accent); font-size:.78rem;">
+        </div>
+        <div class="text-dim small mt-1" id="goPathStatus" style="font-size:.7rem;"></div>
+      </div>
+      <!-- overflow:scroll 로 양방향 스크롤 보장 -->
+      <div id="treeContainer" style="flex:1; overflow:auto; min-height:0;">
+        <div id="treeInner" style="min-width:max-content; padding-bottom:.5rem;"></div>
+      </div>
+      <div id="treePlaceholder" style="display:none; padding:2rem; text-align:center; flex-shrink:0;"
+           class="text-dim">
+        <i class="bi bi-search" style="font-size:2rem; display:block; margin-bottom:.5rem; opacity:.3;"></i>
+        검색 결과 없음
+      </div>
+    </div>
+
+    <!-- 오른쪽: 값 패널 -->
+    <div style="background:var(--bg-card); display:flex; flex-direction:column;
+                overflow:hidden; min-height:0;">
+      <!-- 키 경로 + 포렌식 설명 -->
+      <div id="valHeader" style="padding:.65rem 1rem; border-bottom:1px solid var(--border);
+           background:var(--bg); flex-shrink:0;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem;">
+          <div id="selectedPath" class="text-dim"
+               style="font-size:.77rem; font-family:monospace; word-break:break-all; flex:1;">
+            키를 클릭하면 값이 표시됩니다
+          </div>
+          <div id="selectedTs" class="text-dim" style="font-size:.71rem; white-space:nowrap; flex-shrink:0;"></div>
+        </div>
+        <!-- 포렌식 의미 배너 -->
+        <div id="forensicBanner" style="display:none; margin-top:.45rem; padding:.45rem .65rem;
+             border-radius:.4rem; font-size:.78rem; line-height:1.4;">
+          <span id="forensicBadge" style="font-weight:700; margin-right:.4rem;"></span>
+          <span id="forensicDesc"></span>
+        </div>
+      </div>
+
+      <div id="valContainer" style="flex:1; overflow-y:auto; padding:.75rem 1rem; min-height:0;">
+        <div id="valEmpty" class="text-center py-5 text-dim">
+          <i class="bi bi-key" style="font-size:2.5rem; display:block; margin-bottom:.75rem; opacity:.3;"></i>
+          <div style="font-size:.85rem;">왼쪽 트리에서 키를 선택하세요</div>
+        </div>
+        <div id="valTable" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 포렌식 상세 모달 -->
+  <div id="findingModal" style="display:none; position:fixed; inset:0; z-index:9999;
+       background:rgba(0,0,0,.7); align-items:center; justify-content:center;">
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:.75rem;
+                max-width:800px; width:95%; max-height:85vh; display:flex; flex-direction:column;">
+      <div style="padding:1rem 1.25rem; border-bottom:1px solid var(--border);
+                  display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div id="fModalTitle" style="font-weight:700; font-size:.95rem;"></div>
+          <div id="fModalPath" style="font-size:.77rem; color:var(--accent); font-family:monospace; margin-top:.2rem;"></div>
+        </div>
+        <button onclick="closeFinding()" class="btn btn-sm btn-outline-secondary" style="padding:.2rem .5rem;">✕</button>
+      </div>
+      <div style="padding:1rem 1.25rem; overflow-y:auto;">
+        <div id="fModalDesc" class="text-dim mb-3" style="font-size:.83rem;"></div>
+        <div id="fModalVals"></div>
+        <div id="fModalSubs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON 데이터 임베드 -->
+  <script>
+  const TREE     = {{ result.tree | tojson }};
+  const FINDINGS = {{ result.findings | tojson }};
+
+  // ── 값 맵 구축 (path → {vals, ts}) ──
+  const KV = {};
+  function indexTree(node) {
+    if (!node) return;
+    KV[node.p] = {vals: node.vals || [], ts: node.ts || ''};
+    (node.kids || []).forEach(indexTree);
+  }
+  indexTree(TREE);
+
+  // ── 포렌식 경로 맵 (렌더링 전 정의 필요) ──
+  const SEV_COLOR = {high:'#ef4444', medium:'#f59e0b', info:'#6b7280'};
+  const SEV_BG    = {high:'rgba(239,68,68,.1)', medium:'rgba(245,158,11,.1)', info:'rgba(107,114,128,.1)'};
+  const SEV_LABEL = {high:'위험', medium:'주의', info:'참고'};
+  const FORENSIC_MAP = FINDINGS.map(f => ({
+    pathLo: f.key_path.toLowerCase().replace(/\//g,'\\'),
+    cat: f.category_ko, sev: f.severity, desc: f.description,
+  }));
+  function matchForensicNode(path) {
+    if (!path) return null;
+    const lo = path.toLowerCase().replace(/\//g,'\\');
+    return FORENSIC_MAP.find(f => lo.endsWith(f.pathLo) || lo.includes('\\' + f.pathLo)) || null;
+  }
+  function matchForensic(path) {
+    if (!path) return null;
+    const lo = path.toLowerCase().replace(/\//g,'\\');
+    return FORENSIC_MAP.find(f => lo.includes(f.pathLo) || f.pathLo.includes(lo)) || null;
+  }
+
+  // ── 트리 렌더링 ──
+  function escH(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderNode(node, depth) {
+    if (!node) return document.createDocumentFragment();
+
+    const wrap = document.createElement('div');
+    const hasKids = node.kids && node.kids.length > 0;
+    const indent = depth * 14;
+
+    if (hasKids) {
+      const det = document.createElement('details');
+      if (depth < 2) det.open = true;
+
+      const sum = document.createElement('summary');
+      sum.className = 'reg-row';
+      sum.dataset.path = node.p;
+      sum.style.paddingLeft = (indent + 6) + 'px';
+      const fhit = matchForensicNode(node.p);
+      sum.innerHTML =
+        `<i class="bi bi-folder2 reg-folder-icon" style="${fhit ? 'color:'+SEV_COLOR[fhit.sev]+';' : ''}"></i>` +
+        `<span class="reg-name" style="${fhit ? 'color:'+SEV_COLOR[fhit.sev]+'; font-weight:600;' : ''}">${escH(node.n)}</span>` +
+        (fhit ? `<span class="forensic-chip" style="background:${SEV_COLOR[fhit.sev]}22; color:${SEV_COLOR[fhit.sev]};">${fhit.cat}</span>` : '') +
+        (node.vals && node.vals.length
+          ? `<span class="val-chip">${node.vals.length}</span>`
+          : '') +
+        (node.trunc ? `<span class="trunc-chip">+</span>` : '');
+      sum.addEventListener('click', () => { requestAnimationFrame(() => selectKey(node.p)); });
+      det.appendChild(sum);
+
+      const childWrap = document.createElement('div');
+      (node.kids || []).forEach(kid => childWrap.appendChild(renderNode(kid, depth + 1)));
+      det.appendChild(childWrap);
+      wrap.appendChild(det);
+    } else {
+      const row = document.createElement('div');
+      row.className = 'reg-row reg-leaf';
+      row.dataset.path = node.p;
+      row.style.paddingLeft = (indent + 20) + 'px';
+      const lfhit = matchForensicNode(node.p);
+      row.innerHTML =
+        `<i class="bi bi-key reg-leaf-icon" style="${lfhit ? 'color:'+SEV_COLOR[lfhit.sev]+';' : ''}"></i>` +
+        `<span class="reg-name" style="${lfhit ? 'color:'+SEV_COLOR[lfhit.sev]+';' : ''}">${escH(node.n)}</span>` +
+        (lfhit ? `<span class="forensic-chip" style="background:${SEV_COLOR[lfhit.sev]}22; color:${SEV_COLOR[lfhit.sev]};">${lfhit.cat}</span>` : '') +
+        (node.vals && node.vals.length
+          ? `<span class="val-chip">${node.vals.length}</span>`
+          : '');
+      row.addEventListener('click', () => selectKey(node.p));
+      wrap.appendChild(row);
+    }
+    return wrap;
+  }
+
+  const treeInner = document.getElementById('treeInner');
+  treeInner.appendChild(renderNode(TREE, 0));
+
+  // ── 키 선택 ──
+  let activeEl = null;
+  function selectKey(path) {
+    if (activeEl) activeEl.classList.remove('active');
+    const els = document.querySelectorAll(`[data-path="${CSS.escape(path)}"]`);
+    if (els.length) {
+      activeEl = els[els.length - 1];
+      activeEl.classList.add('active');
+      activeEl.scrollIntoView({block:'nearest'});
+    }
+
+    const kv = KV[path];
+    document.getElementById('selectedPath').textContent = path || '(루트)';
+    document.getElementById('selectedTs').textContent =
+      kv && kv.ts ? `수정: ${kv.ts}` : '';
+
+    // 포렌식 배너
+    const banner = document.getElementById('forensicBanner');
+    const hit = matchForensic(path);
+    if (hit) {
+      banner.style.display = '';
+      banner.style.background  = SEV_BG[hit.sev];
+      banner.style.border      = `1px solid ${SEV_COLOR[hit.sev]}55`;
+      document.getElementById('forensicBadge').style.color = SEV_COLOR[hit.sev];
+      document.getElementById('forensicBadge').textContent = `[${SEV_LABEL[hit.sev]}] ${hit.cat}`;
+      document.getElementById('forensicDesc').textContent  = hit.desc;
+    } else {
+      banner.style.display = 'none';
+    }
+
+    const valTable = document.getElementById('valTable');
+    const valEmpty = document.getElementById('valEmpty');
+
+    if (!kv || !kv.vals || kv.vals.length === 0) {
+      valEmpty.style.display = '';
+      valTable.style.display = 'none';
+      return;
+    }
+    valEmpty.style.display = 'none';
+    valTable.style.display = '';
+
+    valTable.innerHTML = kv.vals.map(v => {
+      const ctxHint = getValueHint(path, v.n);
+      const isBin   = v.t === 'RegBin' || v.t === 'REG_BINARY';
+      const binDec  = isBin ? decodeRegBin(v.v, path, v.n) : null;
+      const hints   = [
+        ctxHint ? `<i class="bi bi-info-circle me-1" style="color:var(--accent);opacity:.7;"></i>${escH(ctxHint)}` : '',
+        binDec  ? binDec.split('\n').map(l => `<i class="bi bi-cpu me-1" style="color:#a78bfa;opacity:.8;"></i>${escH(l)}`).join('<br>') : '',
+      ].filter(Boolean).join('<br>');
+      return `
+      <div class="val-block">
+        <div class="val-row">
+          <div class="val-name" title="${escH(v.n)}">${escH(v.n)}</div>
+          <div class="val-type">${escH(v.t)}</div>
+          <div class="val-value">${escH(v.v)}</div>
+        </div>
+        ${hints ? `<div class="val-hint">${hints}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ── 값 의미 사전 ──
+  // key: 경로 끝부분(소문자), value: {값이름소문자: 설명} 또는 {'*': 와일드카드설명}
+  const VALUE_HINTS = {
+    'winlogon': {
+      'userinit':         '로그인 시 실행 프로그램. 정상값: userinit.exe — 다른 경로 추가 시 악성코드 지속성 의심',
+      'shell':            '셸 프로세스. 정상값: explorer.exe — 변조 시 악성코드',
+      'defaultusername':  '자동 로그인 계정명',
+      'defaultpassword':  '⚠️ 자동 로그인 비밀번호가 평문으로 저장됨 — 보안 위험',
+      'autoadminlogon':   '자동 로그인 활성화 여부 (1=활성, 0=비활성)',
+      'legalnoticecaption': '로그인 화면에 표시되는 알림 제목',
+      'legalnoticetext':  '로그인 화면에 표시되는 알림 내용',
+    },
+    'currentversion\\run': {
+      '*': '⚠️ 부팅 시 자동 실행 항목 — 출처 불명 경로는 악성코드 의심',
+    },
+    'currentversion\\runonce': {
+      '*': '다음 부팅 시 1회만 실행. 실행 후 자동 삭제됨',
+    },
+    'currentversion\\runservices': {
+      '*': '서비스 형태로 자동 실행되는 항목',
+    },
+    'nt\\currentversion': {
+      'productname':            'Windows 제품명 (예: Windows 10 Pro)',
+      'displayversion':         '버전 표시 이름 (예: 22H2)',
+      'releaseid':              '릴리스 ID (예: 2009)',
+      'buildlab':               '빌드 번호',
+      'buildlabex':             '빌드 번호 상세 정보',
+      'registeredowner':        '등록된 소유자 이름',
+      'registeredorganization': '등록된 조직 이름',
+      'installdate':            '설치 시각 (Unix 타임스탬프, 초 단위)',
+      'installtime':            '설치 시각 (Windows FILETIME, 100ns 단위)',
+      'editionid':              '에디션 식별자 (예: Professional)',
+      'productid':              '제품 ID (활성화 코드 아님)',
+      'digitalproductid':       '디지털 라이선스 데이터 (암호화)',
+      'currentversion':         'Windows 내부 버전 번호 (예: 6.3)',
+      'currentbuild':           '현재 빌드 번호',
+      'ubr':                    '업데이트 빌드 리비전 (누적 업데이트 수)',
+    },
+    'timezoneinformation': {
+      'timezonekeyname':  '타임존 이름 (예: Korea Standard Time)',
+      'bias':             'UTC 기준 오프셋(분, 서쪽이 양수). 한국(UTC+9): -540',
+      'activetimebias':   '현재 적용 중인 오프셋(분)',
+      'daylightbias':     '일광절약시간 추가 오프셋(분)',
+      'standardbias':     '표준 시간 추가 오프셋(분)',
+      'daylightstart':    '일광절약시간 시작 시점(바이너리)',
+      'standardstart':    '표준시간 시작 시점(바이너리)',
+    },
+    'computername\\computername': {
+      'computername': '이 시스템의 호스트명',
+    },
+    'typedurls': {
+      'url1': '가장 최근에 입력된 URL (url1 → url25 순서)',
+      '*':    'IE/Edge 주소창에 직접 입력된 URL (url1이 최신)',
+    },
+    'typedpaths': {
+      '*': '탐색기 주소창에 직접 입력한 경로 (000 → 마지막)',
+    },
+    'wordwheelquery': {
+      'mrulistex': '검색어 사용 순서 인덱스 (바이너리)',
+      '*':         '탐색기 검색창 입력 키워드 (0이 가장 최근)',
+    },
+    'recentdocs': {
+      'mrulistex': '최근 문서 사용 순서 인덱스 (바이너리)',
+      '*':         '최근 열람 파일 정보 (바이너리 Shell ID List)',
+    },
+    'userassist\\count': {
+      '*': 'ROT13 인코딩된 실행파일 경로·실행횟수·마지막실행시각. 디코딩 후 분석 필요',
+    },
+    'muicache': {
+      '*': '실행된 적 있는 파일의 표시 이름. 파일을 삭제해도 흔적이 남음',
+    },
+    'bagmru': {
+      '*': 'ShellBag 폴더 접근 이력(바이너리). 네트워크 드라이브·외장드라이브 접근도 기록됨',
+    },
+    'networklist\\profiles': {
+      'profilename':       '저장된 네트워크 이름 (SSID 또는 도메인명)',
+      'datecreated':       '최초 연결 시각 (바이너리 SYSTEMTIME)',
+      'datelastconnected': '마지막 연결 시각 (바이너리 SYSTEMTIME)',
+      'description':       '네트워크 설명',
+      'managed':           '관리형 네트워크 여부 (0=일반, 1=도메인)',
+      'namespacetype':     '네트워크 유형 (0x47=무선, 0x06=유선, 0x17=모바일)',
+      'networkcategory':   '네트워크 분류 (0=공용, 1=사설, 2=도메인)',
+    },
+    'profilelist': {
+      'profileimagepath':    '사용자 홈 디렉터리 경로 (%SystemDrive%\\Users\\<이름>)',
+      'flags':               '프로필 플래그 (0=정상, 1=임시 프로필)',
+      'profileloadtimelow':  '프로필 마지막 로드 시각 하위 32비트 (FILETIME)',
+      'profileloadtimehigh': '프로필 마지막 로드 시각 상위 32비트 (FILETIME)',
+      'refcount':            '현재 프로필을 사용 중인 프로세스 수',
+      'state':               '프로필 상태 플래그',
+      'sid':                 '사용자 SID (Security Identifier)',
+    },
+    'usbstor': {
+      '*': 'USB 저장장치 장치 클래스 항목. 하위 키: VID_PID&REV → 시리얼번호',
+    },
+    'enum\\usbstor': {
+      'friendlyname':    'USB 장치 표시 이름',
+      'hardwareid':      '하드웨어 ID (제조사·모델 식별)',
+      'service':         '담당 드라이버 서비스명',
+      'mfg':             '제조사명',
+      'class':           '장치 클래스',
+      'classguid':       '장치 클래스 GUID',
+      'devicedesc':      '장치 설명',
+    },
+    'currentcontrolset\\services': {
+      'start':         '시작 유형: 0=Boot, 1=System, 2=자동(Auto), 3=수동(Manual), 4=비활성(Disabled)',
+      'type':          '서비스 유형: 1=커널드라이버, 2=파일시스템드라이버, 16=자체프로세스, 32=공유프로세스',
+      'imagepath':     '실행 파일 경로 — svchost.exe -k 형태면 공유 서비스 호스트',
+      'displayname':   '서비스 표시 이름 (서비스 관리자에 보이는 이름)',
+      'description':   '서비스 설명',
+      'objectname':    '실행 계정 (LocalSystem / NetworkService / LocalService)',
+      'errorcontrol':  '오류 시 동작: 0=무시, 1=경고 후 계속, 2=심각(마지막정상시작으로 재시작), 3=치명',
+      'failureactions':'서비스 실패 시 동작 (재시작·명령실행 등, 바이너리)',
+      'group':         '서비스 그룹 (로드 순서 결정)',
+      'dependonservice':'이 서비스가 의존하는 다른 서비스 목록',
+      'tag':           '드라이버 그룹 내 로드 순서 태그',
+    },
+  };
+
+  // ── ROT13 (UserAssist 값 이름 디코딩) ──
+  function rot13(s) {
+    return s.replace(/[A-Za-z]/g, c => {
+      const b = c <= 'Z' ? 65 : 97;
+      return String.fromCharCode(((c.charCodeAt(0)-b+13)%26)+b);
+    });
+  }
+
+  // ── RegBin 바이너리 디코더 (모든 Windows 레지스트리 구조 지원) ──
+  // 참조: libfwsi, libregf, EricZimmerman/Registry, RegRipper, python-registry, ShimCacheParser
+  function decodeRegBin(hexStr, keyPath, valueName) {
+    const hex = hexStr.replace(/\s+/g,'').replace(/,/g,'');
+    if (!hex || hex.length % 2 !== 0) return null;
+    const n = hex.length / 2;
+    const b = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      b[i] = parseInt(hex.substr(i*2, 2), 16);
+      if (isNaN(b[i])) return null;
+    }
+
+    const pathLo = (keyPath || '').toLowerCase().replace(/\//g,'\\');
+    const nameLo = (valueName || '').toLowerCase();
+    const lines = [];
+
+    function u16(pos) { return b[pos] | (b[pos+1] << 8); }
+    function u32(pos) { return (b[pos]|(b[pos+1]<<8)|(b[pos+2]<<16)) + b[pos+3]*0x1000000; }
+    function u64(pos) { return BigInt(u32(pos)) | (BigInt(u32(pos+4)) << 32n); }
+    function hex8(v)  { return '0x' + v.toString(16).toUpperCase().padStart(8,'0'); }
+
+    const EPOCH_DIFF = 116444736000000000n;
+    const FT_MIN = EPOCH_DIFF + 315532800n * 10000000n;
+    const FT_MAX = EPOCH_DIFF + 4102444800n * 10000000n;
+
+    function ftToStr(ft) {
+      if (ft < FT_MIN || ft > FT_MAX) return null;
+      const ms = Number((ft - EPOCH_DIFF) / 10000n);
+      const d = new Date(ms);
+      return isNaN(d) ? null : d.toISOString().replace('T',' ').slice(0,19) + ' UTC';
+    }
+    function tryFT(pos) { return pos+8<=n ? ftToStr(u64(pos)) : null; }
+    function tryST(pos) {
+      if (pos+16 > n) return null;
+      const yr=u16(pos),mo=u16(pos+2),dy=u16(pos+6),hr=u16(pos+8),mi=u16(pos+10),sc=u16(pos+12);
+      if (yr<1980||yr>2100||mo<1||mo>12||dy<1||dy>31) return null;
+      return `${yr}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')} `
+           + `${String(hr).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(sc).padStart(2,'0')} (현지시간)`;
+    }
+
+    // ── SID 파싱 (S-1-5-21-...) ──
+    function tryParseSID(pos) {
+      if (pos+8 > n) return null;
+      const rev=b[pos], sub=b[pos+1];
+      if (rev!==1||sub<1||sub>15||pos+8+sub*4>n) return null;
+      let auth=0;
+      for (let i=0;i<6;i++) auth=auth*256+b[pos+2+i];
+      const subs=[];
+      for (let i=0;i<sub;i++) subs.push(u32(pos+8+i*4));
+      return `S-${rev}-${auth}-${subs.join('-')}`;
+    }
+    const SID_NAMES = {
+      'S-1-0-0':'널 SID','S-1-1-0':'모든 사용자 (Everyone)',
+      'S-1-3-0':'생성자 소유자','S-1-5-18':'Local System',
+      'S-1-5-19':'NT Authority\\Local Service','S-1-5-20':'NT Authority\\Network Service',
+      'S-1-5-32-544':'Administrators','S-1-5-32-545':'Users','S-1-5-32-546':'Guests',
+    };
+
+    // ── GUID 파싱 (Mixed-endian) ──
+    const KNOWN_GUIDS = {
+      '10d3742f6835cd43a9769b44d39ad264':'WpdBusEnumRoot (USB MTP)',
+      '36fc9e6003104a2190300d0d1a4e2090':'USB Controller',
+      '4d36e978e325ce11bfc10000c1000000':'Ports (Serial/Parallel)',
+      '88bae032a9d84c1e9d5abee0be9c5b45':'USB Hub',
+      'a5dcbf10636348ae14850c4a50000000':'USB Raw Device',
+      '53f5630d01d511cf0000444553540000':'Disk Device',
+      '53f5630a01d511cf0000444553540000':'Storage Volume',
+      '53f5630b01d511cf0000444553540000':'CDROM Device',
+      '6bdd1fc6f34247de9b1e67d2a3e3c3e0':'Disk Drive Class',
+    };
+    function tryGUID(pos) {
+      if (pos+16 > n) return null;
+      const d1=u32(pos).toString(16).padStart(8,'0');
+      const d2=u16(pos+4).toString(16).padStart(4,'0');
+      const d3=u16(pos+6).toString(16).padStart(4,'0');
+      const d4=Array.from(b.slice(pos+8,pos+16)).map(x=>x.toString(16).padStart(2,'0')).join('');
+      const guid=`{${d1}-${d2}-${d3}-${d4.slice(0,4)}-${d4.slice(4)}}`.toUpperCase();
+      return { guid, known: KNOWN_GUIDS[(d1+d2+d3+d4).toLowerCase()] };
+    }
+
+    // ── ShellItem ID List 타입 감지 ──
+    const SHELL_TYPES = {
+      0x1f:'바탕화면/특수폴더',0x2f:'드라이브 루트',0x23:'드라이브 루트',
+      0x25:'이동식 드라이브',0x29:'네트워크 드라이브',
+      0x31:'파일시스템 폴더',0x32:'파일시스템 파일',
+      0x40:'네트워크 공유',0x41:'네트워크 공유',
+      0x61:'파일시스템 폴더',0x71:'파일시스템 폴더(유니코드)',
+      0x74:'파일시스템 파일(유니코드)',0xb1:'파일시스템 파일(확장)',
+      0xc3:'네트워크 공유(확장)',
+    };
+    function tryShellList(pos) {
+      const items=[]; let off=pos;
+      while (off+2<=n) {
+        const sz=u16(off); if(sz===0||off+sz>n) break;
+        const tc=b[off+2];
+        if (SHELL_TYPES[tc]) items.push(SHELL_TYPES[tc]);
+        off+=sz;
+      }
+      return items.length?items:null;
+    }
+
+    // ── UTF-16 LE 문자열 추출 ──
+    function tryUtf16(pos,maxLen) {
+      const lim=Math.min(pos+(maxLen||256)*2,n); let s='';
+      for (let i=pos;i+1<lim;i+=2) {
+        const c=u16(i); if(c===0) break;
+        if(c<32&&c!==9&&c!==10&&c!==13) return null;
+        s+=String.fromCharCode(c);
+      }
+      return s.length>=2?s:null;
+    }
+
+    // ── ASCII 문자열 추출 ──
+    function tryAscii(pos,maxLen) {
+      const lim=Math.min(pos+(maxLen||256),n); let s='';
+      for (let i=pos;i<lim;i++) {
+        const c=b[i]; if(c===0) break;
+        if(c<32&&c!==9&&c!==10&&c!==13) return null;
+        s+=String.fromCharCode(c);
+      }
+      return s.length>=3?s:null;
+    }
+
+    // ══════════════════════════════════
+    //  항목별 전용 해석
+    // ══════════════════════════════════
+
+    // 네트워크 연결 시각 (SYSTEMTIME)
+    if ((nameLo==='datecreated'||nameLo==='datelastconnected') && n>=16) {
+      const st=tryST(0);
+      if (st) lines.push(`📅 ${nameLo==='datecreated'?'최초 연결':'마지막 연결'}: ${st}`);
+    }
+
+    // UserAssist 실행이력 (Win7+ 72바이트 / XP 16바이트)
+    if (pathLo.includes('userassist') && nameLo!=='mrulistex') {
+      if (n>=72) {
+        const cnt=u32(4), focMs=u32(12), ft=tryFT(60);
+        if (cnt<1000000) lines.push(`▶ 실행 횟수: ${cnt===0?'1 (또는 없음)':cnt}회`);
+        if (ft) lines.push(`📅 마지막 실행: ${ft}`);
+        if (focMs>0) lines.push(`⏱ 창 포커스: ${(focMs/1000).toFixed(1)}초`);
+      } else if (n>=16) {
+        const cnt=u32(4); if(cnt<1000000) lines.push(`▶ 실행 횟수: ${cnt}회`);
+        const ft=tryFT(8); if(ft) lines.push(`📅 마지막 실행: ${ft}`);
+      }
+    }
+
+    // MRUListEx — 사용 순서 인덱스
+    if (nameLo==='mrulistex' && n%4===0) {
+      const order=[];
+      for (let i=0;i<n;i+=4) { const v=u32(i); if(v===0xFFFFFFFF) break; order.push(v); }
+      if (order.length) lines.push(`📋 최근 사용 순서: ${order.join(' → ')}`);
+    }
+
+    // Service FailureActions
+    if (nameLo==='failureactions' && n>=12) {
+      const reset=u32(0), cnt2=u32(8);
+      const T={0:'아무것도 안함',1:'서비스 재시작',2:'프로그램 실행',3:'재부팅'};
+      if (cnt2<=3 && n>=12+cnt2*8) {
+        lines.push(`🔄 실패 초기화 주기: ${reset}초`);
+        for (let i=0;i<cnt2;i++) {
+          const t=u32(12+i*8),d=u32(16+i*8);
+          lines.push(`  실패 ${i+1}: ${T[t]||'알 수 없음'} (${d/1000}초 후)`);
+        }
+      }
+    }
+
+    // DaylightStart / StandardStart
+    if ((nameLo==='daylightstart'||nameLo==='standardstart') && n===16) {
+      const mo=u16(2),dow=u16(4),day=u16(6),hr=u16(8);
+      const DOW=['일','월','화','수','목','금','토'];
+      const MON=['','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+      if (mo>=1&&mo<=12) lines.push(`📅 ${MON[mo]} ${day===5?'마지막':day+'번째'} ${DOW[dow]||''}요일 ${String(hr).padStart(2,'0')}:00`);
+    }
+
+    // ProfileLoadTime / LastLogon (FILETIME 8바이트)
+    if ((nameLo.includes('profileloadtime')||nameLo.includes('lastlogon')) && n===8) {
+      const ft=tryFT(0); if(ft) lines.push(`📅 시각: ${ft}`);
+    }
+
+    // TimeZone Bias → UTC 오프셋
+    if ((nameLo==='bias'||nameLo==='activetimebias') && n===4) {
+      const raw=u32(0), signed=raw>0x7FFFFFFF?raw-0x100000000:raw;
+      const h=Math.abs(signed)/60|0, m=Math.abs(signed)%60;
+      lines.push(`🌐 UTC${signed<=0?'+':'-'}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+    }
+
+    // BAM (Background Activity Moderator) — 마지막 실행 FILETIME
+    if ((pathLo.includes('\\bam\\') || pathLo.includes('\\bam\\state\\')) && n===8) {
+      const ft=tryFT(0); if(ft) lines.push(`📅 BAM 마지막 실행: ${ft}`);
+    }
+
+    // AppCompatCache / ShimCache 헤더 시그니처
+    if (nameLo==='appcompatcache' && n>=8) {
+      const sig=u32(0);
+      const sigMap={0xDEADBEEF:'Windows XP/2003',0xBADC0FFE:'Windows Vista/7',0x80:'Windows 8+',0x30:'Windows 10'};
+      lines.push(`🧩 ShimCache 헤더: ${sigMap[sig]||'알 수 없음'} (${hex8(sig)})`);
+      if (sigMap[sig]) lines.push(`📦 추정 항목 수: ${u32(4)}개`);
+    }
+
+    // ═══ SAM V — 사용자 계정 정보 (완전 파싱) ═══
+    // 헤더 테이블(0x00~0xC8, 12B 엔트리 × 17개), 데이터는 0xCC부터 시작
+    // 매칭 조건 완화: 'v' 이름 + 0xCC 초과 크기 + 유효한 오프셋 테이블
+    if ((nameLo==='v') && n>0xCC) {
+      const SAM_V_FIELDS = [
+        ['0x0C','👤 계정명',            0x0C, 0x10, true],
+        ['0x18','👤 전체 이름',         0x18, 0x1C, true],
+        ['0x24','💬 관리자 코멘트',     0x24, 0x28, true],
+        ['0x30','💬 사용자 코멘트',     0x30, 0x34, true],
+        ['0x48','🏠 홈 디렉터리',       0x48, 0x4C, true],
+        ['0x54','💾 홈 드라이브',       0x54, 0x58, true],
+        ['0x60','📜 로그온 스크립트',   0x60, 0x64, true],
+        ['0x6C','📁 프로필 경로',       0x6C, 0x70, true],
+        ['0x78','🖥 허용 워크스테이션', 0x78, 0x7C, true],
+      ];
+      let hit = 0;
+      for (const [_hex, label, oOff, lOff, isUtf16] of SAM_V_FIELDS) {
+        if (oOff+4 > n) break;
+        const off = u32(oOff) + 0xCC;
+        const len = u32(lOff);
+        if (len === 0 || len > 1024 || off >= n || off+len > n) continue;
+        const s = isUtf16 ? tryUtf16(off, len/2) : tryAscii(off, len);
+        if (s) { lines.push(`${label}: ${s}`); hit++; }
+      }
+      // ACB 플래그 (V값 끝부분, 일부 버전)
+      if (hit > 0 && n >= 0xCC+4) {
+        lines.push(`📊 SAM V 구조 파싱 완료 (${hit}개 필드)`);
+      }
+    }
+
+    // ═══ SAM F — 로그온/암호 시각 + ACB 플래그 (0xA0 바이트) ═══
+    if ((nameLo==='f') && n>=0x48) {
+      const ft1=tryFT(0x08), ft2=tryFT(0x18), ft3=tryFT(0x20), ft4=tryFT(0x28);
+      if (ft1) lines.push(`📅 마지막 로그온: ${ft1}`);
+      if (ft2) lines.push(`🔑 암호 마지막 변경: ${ft2}`);
+      if (ft3 && ft3 !== '1601-01-01 00:00:00 UTC') lines.push(`⏰ 계정 만료: ${ft3}`);
+      if (ft4) lines.push(`❌ 마지막 실패 로그온: ${ft4}`);
+      if (n >= 0x44) {
+        const rid = u32(0x30);
+        lines.push(`🆔 RID: ${rid} (${rid===500?'Administrator':rid===501?'Guest':rid===503?'DefaultAccount':rid<1000?'기본 계정':'사용자 계정'})`);
+      }
+      if (n >= 0x3C) {
+        const acb = u32(0x38), tags=[];
+        if(acb&0x0001) tags.push('비활성'); if(acb&0x0002) tags.push('홈디렉터리필수');
+        if(acb&0x0008) tags.push('임시암호'); if(acb&0x0010) tags.push('암호불필요');
+        if(acb&0x0020) tags.push('암호변경불가'); if(acb&0x0040) tags.push('암호화가능');
+        if(acb&0x0080) tags.push('임시중복'); if(acb&0x0100) tags.push('일반사용자');
+        if(acb&0x0200) tags.push('일반계정'); if(acb&0x0800) tags.push('인터도메인신뢰');
+        if(acb&0x1000) tags.push('워크스테이션신뢰'); if(acb&0x2000) tags.push('서버신뢰');
+        if(acb&0x10000) tags.push('암호무제한'); if(acb&0x20000) tags.push('MNS로그온');
+        if(acb&0x40000) tags.push('스마트카드필수'); if(acb&0x80000) tags.push('위임가능');
+        if(acb&0x100000) tags.push('DES만허용'); if(acb&0x200000) tags.push('사전인증불필요');
+        if(acb&0x400000) tags.push('암호만료');
+        if (tags.length) lines.push(`🔒 ACB 플래그: ${tags.join(', ')}`);
+      }
+      if (n >= 0x44) {
+        const invCnt = u16(0x40), lgnCnt = u16(0x42);
+        if (invCnt>0||lgnCnt>0) lines.push(`📈 로그온: ${lgnCnt}회 / 실패: ${invCnt}회`);
+      }
+    }
+
+    // ═══ MountedDevices DosDevices\X: ═══
+    if ((nameLo.startsWith('\\dosdevices\\')||nameLo.startsWith('\\??\\volume')) && n>=12) {
+      if (n === 12) {
+        // MBR 디스크: <sig:DWORD><offset:QWORD>
+        const sig = u32(0).toString(16).toUpperCase().padStart(8,'0');
+        const off = u64(4);
+        lines.push(`💾 MBR 디스크 시그니처: 0x${sig}`);
+        lines.push(`📍 파티션 시작 오프셋: ${off} bytes (${Number(off)/1024/1024/1024|0} GB 위치)`);
+      } else {
+        // GPT/USB: UTF-16LE 문자열
+        const s = tryUtf16(0, n/2);
+        if (s) {
+          lines.push(`💾 장치 식별자: ${s}`);
+          if (s.includes('USBSTOR')) lines.push(`  → USB 저장장치 마운트 흔적`);
+          if (s.includes('DMIO:ID:')) lines.push(`  → GPT 파티션 GUID`);
+          if (s.includes('CdRomNECVMWar')) lines.push(`  → 가상 CD-ROM`);
+        }
+      }
+    }
+
+    // ═══ ShellItem 단일/리스트 — 파일/폴더 항목 (0x31/0x32/0xb1/0x71/0x74) ═══
+    function parseShellItemFile(off) {
+      if (off+0x0E > n) return null;
+      const sz = u16(off);
+      if (sz<0x0E||off+sz>n) return null;
+      const type = b[off+2] & 0x70;  // 마스크
+      const typeRaw = b[off+2];
+      const fileSize = u32(off+4);
+      const dosDate = u16(off+8), dosTime = u16(off+10);
+      const dy = dosDate&0x1F, dmo = (dosDate>>5)&0xF, dyr = ((dosDate>>9)&0x7F)+1980;
+      const ts = dosTime&0x1F, tmi = (dosTime>>5)&0x3F, thr = (dosTime>>11)&0x1F;
+      const dosStr = (dyr>=1980&&dyr<=2100&&dmo>=1&&dmo<=12&&dy>=1&&dy<=31)
+        ? `${dyr}-${String(dmo).padStart(2,'0')}-${String(dy).padStart(2,'0')} ${String(thr).padStart(2,'0')}:${String(tmi).padStart(2,'0')}:${String(ts*2).padStart(2,'0')}`
+        : null;
+      // ShortName (ASCII, NUL-종료, WORD 정렬)
+      let pos = off+0x0E;
+      let shortName = '';
+      while (pos<off+sz && b[pos]!==0) { shortName += String.fromCharCode(b[pos]); pos++; }
+      pos++; if ((pos-off)%2) pos++;
+      // 확장 블록 (BEEF0004 시그니처)
+      let longName = null, mftEntry = null, mftSeq = null, createDos = null, accessDos = null;
+      for (let scan=off+sz-8; scan>off+0x0E; scan--) {
+        if (scan+4<=off+sz && b[scan+2]===0xEF && b[scan+3]===0xBE && b[scan]===0x04 && b[scan+1]===0x00) {
+          // 확장 블록 발견
+          const ext = scan-4;  // ExtBlock size 위치
+          if (ext+8 > off+sz) break;
+          const extVer = u16(ext-4);
+          // 생성/접근 DOS 시각
+          if (scan+12 <= off+sz) {
+            const cd=u16(scan+4),ct=u16(scan+6),ad=u16(scan+8),at=u16(scan+10);
+            const cy=((cd>>9)&0x7F)+1980,cm=(cd>>5)&0xF,cdd=cd&0x1F;
+            const ay=((ad>>9)&0x7F)+1980,am=(ad>>5)&0xF,add=ad&0x1F;
+            if (cy>=1980&&cy<=2100&&cm>=1&&cm<=12)
+              createDos = `${cy}-${String(cm).padStart(2,'0')}-${String(cdd).padStart(2,'0')}`;
+            if (ay>=1980&&ay<=2100&&am>=1&&am<=12)
+              accessDos = `${ay}-${String(am).padStart(2,'0')}-${String(add).padStart(2,'0')}`;
+          }
+          // MFT 엔트리 (v≥7, 8바이트, 하위 6B = entry, 상위 2B = seq)
+          if (extVer >= 7 && scan+22 <= off+sz) {
+            const mftLo = u32(scan+14), mftHi = u16(scan+18);
+            mftEntry = mftLo + mftHi * 0x100000000;
+            mftSeq = u16(scan+20);
+          }
+          // LongName (UTF-16LE) 추정
+          const lnStart = extVer>=8 ? scan+34 : (extVer>=7 ? scan+30 : scan+14);
+          if (lnStart < off+sz) {
+            const ln = tryUtf16(lnStart, (off+sz-lnStart)/2);
+            if (ln) longName = ln;
+          }
+          break;
+        }
+      }
+      return { sz, typeRaw, type, fileSize, dosStr, shortName, longName, mftEntry, mftSeq, createDos, accessDos };
+    }
+
+    // ShellBag NodeSlot / ItemPos / 일반 ShellItem 리스트
+    if (pathLo.includes('bagmru')||pathLo.includes('shellbag')||pathLo.includes('shell\\bags')) {
+      let off = 0, idx = 0;
+      while (off+2 < n && idx < 20) {
+        const sz = u16(off);
+        if (sz===0) break;
+        if (off+sz>n) break;
+        const tc = b[off+2];
+        if ((tc&0x70)===0x30) {
+          const r = parseShellItemFile(off);
+          if (r) {
+            const name = r.longName || r.shortName;
+            const isDir = (r.typeRaw&0x01)===0x01;
+            lines.push(`📁 ${isDir?'폴더':'파일'}: ${name||'(이름없음)'}${r.fileSize?` (${r.fileSize} bytes)`:''}`);
+            if (r.dosStr) lines.push(`  ✏️ 수정: ${r.dosStr}`);
+            if (r.createDos) lines.push(`  📅 생성: ${r.createDos}`);
+            if (r.accessDos) lines.push(`  👁 접근: ${r.accessDos}`);
+            if (r.mftEntry!==null) lines.push(`  🔖 MFT: 엔트리 ${r.mftEntry}, 시퀀스 ${r.mftSeq}`);
+          }
+        } else if (SHELL_TYPES[tc]) {
+          lines.push(`📂 ${SHELL_TYPES[tc]}`);
+        }
+        off += sz;
+        idx++;
+      }
+    }
+
+    // ═══ ComDlg32 OpenSavePidlMRU / LastVisitedPidlMRU ═══
+    if (pathLo.includes('comdlg32\\opensavepidlmru')||pathLo.includes('comdlg32\\opensavemru')) {
+      // 직렬화된 PIDL: ShellItem 연속, 0x0000 종료
+      let off = 0, found = [];
+      while (off+2 < n) {
+        const sz = u16(off);
+        if (sz===0) break;
+        if (off+sz>n) break;
+        if ((b[off+2]&0x70)===0x30) {
+          const r = parseShellItemFile(off);
+          if (r && (r.longName||r.shortName)) found.push(r.longName||r.shortName);
+        }
+        off += sz;
+      }
+      if (found.length) lines.push(`📂 PIDL 경로: ${found.join(' \\ ')}`);
+    }
+    if (pathLo.includes('lastvisitedpidlmru')||pathLo.includes('lastvisitedmru')) {
+      // <UTF-16 exe 이름 NUL><PIDL>
+      const exe = tryUtf16(0, 128);
+      if (exe) {
+        lines.push(`⚙ 실행 프로그램: ${exe}`);
+        const pidlStart = exe.length*2 + 2;
+        let off = pidlStart, found = [];
+        while (off+2 < n) {
+          const sz = u16(off);
+          if (sz===0) break;
+          if (off+sz>n) break;
+          if ((b[off+2]&0x70)===0x30) {
+            const r = parseShellItemFile(off);
+            if (r && (r.longName||r.shortName)) found.push(r.longName||r.shortName);
+          }
+          off += sz;
+        }
+        if (found.length) lines.push(`📂 마지막 방문: ${found.join(' \\ ')}`);
+      }
+    }
+
+    // ═══ AppCompatCache Windows 10/11 항목 단위 파싱 ═══
+    if (nameLo === 'appcompatcache' && n > 0x30) {
+      const hdrSig = u32(0);
+      const win10Hdrs = [0x30, 0x34, 0x80];
+      if (win10Hdrs.includes(hdrSig)) {
+        lines.push(`🧩 ShimCache Win10/11 헤더 (${hex8(hdrSig)})`);
+        // 엔트리 스캔: '10ts'(0x73743031) 또는 '11ts'(0x73743131)
+        let off = hdrSig, entries = [];
+        for (let i=0; i<5 && off<n-0x20; i++) {
+          if (u32(off)!==0x73743031 && u32(off)!==0x73743131) {
+            // 시그니처 찾기
+            let found = -1;
+            for (let s=off; s<Math.min(off+0x200, n-4); s++) {
+              if ((u32(s)===0x73743031||u32(s)===0x73743131)) { found = s; break; }
+            }
+            if (found<0) break;
+            off = found;
+          }
+          const ceds = u32(off+8);
+          const pathSize = u16(off+0x0C);
+          if (pathSize===0||pathSize>0x800||off+0x0E+pathSize>n) break;
+          const p = tryUtf16(off+0x0E, pathSize/2);
+          const ft = tryFT(off+0x0E+pathSize);
+          if (p) entries.push(`${p}${ft?` [${ft}]`:''}`);
+          off += 0x0C + ceds + 8;
+          if (off >= n) break;
+        }
+        entries.slice(0,5).forEach(e => lines.push(`  ▸ ${e}`));
+        if (entries.length>5) lines.push(`  ... (${entries.length-5}개 더)`);
+      } else {
+        const sigMap={0xDEADBEEF:'Windows XP/2003',0xBADC0FFE:'Windows Vista/7'};
+        lines.push(`🧩 ShimCache: ${sigMap[hdrSig]||hex8(hdrSig)}`);
+      }
+    }
+
+    // ═══ Bluetooth Device LinkKey ═══
+    if (pathLo.includes('bthport\\parameters\\devices')) {
+      if (nameLo==='linkkey' && n===16) {
+        const k = Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join(':');
+        lines.push(`🔵 BT LinkKey: ${k}`);
+      }
+      if (nameLo==='name' && n>=2) {
+        const s = tryAscii(0,n) || tryUtf16(0,n/2);
+        if (s) lines.push(`🔵 Bluetooth 장치명: ${s}`);
+      }
+      if ((nameLo==='address'||nameLo==='localaddress') && n===6) {
+        const mac = Array.from(b).reverse().map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(':');
+        lines.push(`🔵 MAC 주소: ${mac}`);
+      }
+    }
+
+    // ═══ NetworkList Signatures DefaultGatewayMac ═══
+    if (nameLo==='defaultgatewaymac' && n===6) {
+      const mac = Array.from(b).map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(':');
+      lines.push(`📡 기본 게이트웨이 MAC: ${mac}`);
+    }
+    if ((nameLo==='dnssuffix'||nameLo==='firstnetwork'||nameLo==='description') && n>=2) {
+      const s = tryUtf16(0,n/2);
+      if (s) lines.push(`📡 ${nameLo==='dnssuffix'?'DNS 접미사':nameLo==='firstnetwork'?'네트워크 이름':'설명'}: ${s}`);
+    }
+
+    // ═══ TypedURLsTime (8B FILETIME per URL) ═══
+    if (pathLo.includes('typedurlstime') && n===8) {
+      const ft = tryFT(0); if (ft) lines.push(`📅 URL 입력 시각: ${ft}`);
+    }
+
+    // ═══ EMDMgmt (ReadyBoost 호환성 테스트) ═══
+    if (pathLo.includes('emdmgmt')) {
+      if (nameLo==='lasttestedtime' && n===8) {
+        const ft=tryFT(0); if(ft) lines.push(`📅 마지막 호환성 테스트: ${ft}`);
+      }
+      if ((nameLo==='readspeedkbs'||nameLo==='writespeedkbs') && n===4) {
+        lines.push(`⚡ ${nameLo==='readspeedkbs'?'읽기':'쓰기'} 속도: ${u32(0)} KB/s`);
+      }
+      if (nameLo==='deviceid' && n>=2) {
+        const s = tryUtf16(0,n/2); if(s) lines.push(`💾 장치 ID: ${s}`);
+      }
+    }
+
+    // SID 전용 값
+    if ((nameLo.includes('sid')||nameLo==='securityidentifier') && n>=8 && b[0]===1) {
+      const sid=tryParseSID(0);
+      if (sid) {
+        lines.push(`🔑 SID: ${sid}`);
+        const desc=SID_NAMES[sid]||(sid.startsWith('S-1-5-21-')?'도메인/로컬 계정 SID':null);
+        if (desc) lines.push(`  → ${desc}`);
+      }
+    }
+
+    // GUID 전용 값
+    if ((nameLo.includes('guid')||nameLo.includes('classguid')) && n===16) {
+      const g=tryGUID(0);
+      if (g) { lines.push(`🔷 GUID: ${g.guid}`); if(g.known) lines.push(`  → ${g.known}`); }
+    }
+
+    // ShellBag / BagMRU Item ID List
+    if ((pathLo.includes('bagmru')||pathLo.includes('shellbag')) && n>2) {
+      const items=tryShellList(0);
+      if (items&&items.length) lines.push(`📁 Shell Item: ${items.join(' > ')}`);
+    }
+
+    // ═══ EDID — 모니터 식별 정보 (128 바이트 표준) ═══
+    if (n>=128 && b[0]===0x00 && b[1]===0xFF && b[2]===0xFF && b[3]===0xFF &&
+        b[4]===0xFF && b[5]===0xFF && b[6]===0xFF && b[7]===0x00) {
+      // 제조사 코드 (3자 * 5비트, 빅엔디안)
+      const mfg = (b[8]<<8)|b[9];
+      const m1 = String.fromCharCode(((mfg>>10)&0x1F)+64);
+      const m2 = String.fromCharCode(((mfg>>5)&0x1F)+64);
+      const m3 = String.fromCharCode((mfg&0x1F)+64);
+      const pcode = b[10] | (b[11]<<8);
+      const serial = u32(12);
+      const week = b[16], year = b[17]+1990;
+      const ver = b[18], rev = b[19];
+      lines.push(`🖥 모니터 제조사 (PNP ID): ${m1}${m2}${m3}`);
+      lines.push(`🖥 제품 코드: 0x${pcode.toString(16).toUpperCase().padStart(4,'0')}`);
+      if (serial>0&&serial<0xFFFFFFFF) lines.push(`🖥 시리얼: ${serial}`);
+      lines.push(`🖥 제조: ${year}년 ${week}주차`);
+      lines.push(`🖥 EDID 버전: ${ver}.${rev}`);
+      // Descriptor 블록에서 모델명 추출 (offset 54, 72, 90, 108)
+      for (const dOff of [54,72,90,108]) {
+        if (dOff+18>n) break;
+        if (b[dOff]===0&&b[dOff+1]===0&&b[dOff+2]===0&&b[dOff+3]===0xFC) {
+          let name='';
+          for (let i=dOff+5;i<dOff+18;i++) {
+            if (b[i]===0x0A||b[i]===0) break;
+            if (b[i]>=32) name += String.fromCharCode(b[i]);
+          }
+          if (name) lines.push(`🖥 모니터 이름: ${name.trim()}`);
+        }
+      }
+    }
+
+    // ═══ DigitalProductId / DigitalProductId4 — Windows 라이선스 ═══
+    if ((nameLo==='digitalproductid'||nameLo==='digitalproductid4') && n>=164) {
+      const isV4 = nameLo==='digitalproductid4';
+      const size = u32(0);
+      lines.push(`🔑 라이선스 ${isV4?'v4':'v1'} 구조 (${size} bytes)`);
+      if (!isV4) {
+        // v1: 8-11=major, 12-15=minor, 52-67=product key (Base24 인코딩)
+        const ed = u32(8), mn = u32(12);
+        lines.push(`🪟 에디션 ID: ${ed}`);
+        lines.push(`🪟 채널 ID: ${mn}`);
+        // Product Key 디코딩 (Base24)
+        const CHARSET = 'BCDFGHJKMPQRTVWXY2346789';
+        const pkBytes = Array.from(b.slice(52, 67));
+        let pk = '';
+        for (let i=24; i>=0; i--) {
+          let rem = 0;
+          for (let j=14; j>=0; j--) { rem = rem*256 + pkBytes[j]; pkBytes[j] = (rem/24)|0; rem = rem%24; }
+          pk = CHARSET[rem] + pk;
+          if (i%5===0 && i>0) pk = '-' + pk;
+        }
+        lines.push(`🔑 Product Key: ${pk}`);
+      } else {
+        // v4: 0x04에 32바이트 EditionID, 0x44에 ProductName, 0x144에 ProductId 등
+        const ed = tryUtf16(8, 32);
+        if (ed) lines.push(`🪟 에디션 ID: ${ed}`);
+        const prod = tryUtf16(0x84, 128);
+        if (prod) lines.push(`🪟 제품명: ${prod}`);
+      }
+    }
+
+    // ═══ MachineGuid — Cryptography UUID ═══
+    if (nameLo==='machineguid' && n>=2) {
+      const s = tryUtf16(0, n/2);
+      if (s) lines.push(`🆔 컴퓨터 고유 ID (텔레메트리 추적용): ${s}`);
+    }
+
+    // ═══ WlanSvc Wireless SSID — Profiles\Interfaces\<GUID>\<UUID> ═══
+    if (pathLo.includes('wlansvc') || pathLo.includes('eaphost')) {
+      if (nameLo==='ssid' && n>=1 && n<=32) {
+        const ssid = tryAscii(0, n) || Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+        lines.push(`📶 SSID: ${ssid}`);
+      }
+      if (nameLo==='bssid' && n===6) {
+        const mac = Array.from(b).map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(':');
+        lines.push(`📶 BSSID (AP MAC): ${mac}`);
+      }
+    }
+
+    // ═══ TaskCache\Tasks\<GUID> — Hash 16B + 시각 ═══
+    if (pathLo.includes('taskcache\\tasks')) {
+      if (nameLo==='hash' && n===32) {
+        // SHA256 task definition hash
+        const h = Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+        lines.push(`#️⃣ Task SHA-256: ${h.slice(0,32)}...`);
+      }
+      if (nameLo==='id' && n>=2) {
+        const s = tryUtf16(0,n/2);
+        if (s) lines.push(`🆔 Task ID: ${s}`);
+      }
+      if ((nameLo==='lastregistrationtime'||nameLo==='dynamicinfo') && n===8) {
+        const ft=tryFT(0); if(ft) lines.push(`📅 Task 시각: ${ft}`);
+      }
+      if (nameLo==='dynamicinfo' && n>=24) {
+        // 0x00: CreationTime, 0x08: LastRunTime, 0x14: LastResultCode
+        const ft1=tryFT(0), ft2=tryFT(8);
+        if (ft1) lines.push(`📅 Task 생성: ${ft1}`);
+        if (ft2) lines.push(`📅 Task 마지막 실행: ${ft2}`);
+        if (n>=24) lines.push(`📊 마지막 결과 코드: ${hex8(u32(0x14))}`);
+      }
+    }
+
+    // ═══ CryptnetUrlCache\MetaData — 인증서/CRL 다운로드 캐시 ═══
+    if (pathLo.includes('cryptnerturlcache')||pathLo.includes('cryptnetcache')||pathLo.includes('officecache')) {
+      if (n>=0x60) {
+        const ft1=tryFT(0x10), ft2=tryFT(0x18);
+        if (ft1) lines.push(`📅 다운로드 시각: ${ft1}`);
+        if (ft2) lines.push(`📅 만료 시각: ${ft2}`);
+        if (n>=0x30) {
+          const sz = u32(0x24);
+          lines.push(`📦 캐시된 데이터 크기: ${sz} bytes`);
+        }
+      }
+    }
+
+    // ═══ AmCache InventoryApplicationFile LongPathHash (8B) ═══
+    if (nameLo==='longpathhash' && n===8) {
+      const h = Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+      lines.push(`#️⃣ 경로 해시: ${h.toUpperCase()}`);
+    }
+
+    // ═══ ProductPolicy — Windows 라이선스 정책 (큰 바이너리, 헤더만) ═══
+    if (nameLo==='productpolicy' && n>=0x14) {
+      const totalSz = u32(0);
+      const itemCount = u32(8);
+      const endOff = u32(0x0C);
+      lines.push(`📜 라이선스 정책: 총 ${totalSz} bytes, ${itemCount}개 항목`);
+    }
+
+    // ═══ NIC OUI 벤더 매핑 (잘 알려진 MAC 접두사) ═══
+    const OUI_VENDORS = {
+      '000c29':'VMware','005056':'VMware','000569':'VMware',
+      '080027':'VirtualBox','525400':'QEMU/KVM',
+      '001c14':'VMware','001c42':'Parallels',
+      'b827eb':'Raspberry Pi','dca632':'Raspberry Pi',
+      '0050f2':'Microsoft','7c1e52':'Microsoft (Surface)',
+      '001dd8':'Microsoft','3c8375':'Microsoft',
+      '000d3a':'Microsoft Cloud','7c5cf8':'Microsoft Mobile',
+      '00155d':'Hyper-V Virtual',
+      '001a11':'Google','f4f5d8':'Google','3c5ab4':'Google',
+      'a4c138':'Telink Semi (BLE)',
+      '283f69':'Sony','fcf136':'Samsung',
+      'ac220b':'ASUSTek','9c5c8e':'ASUSTek',
+      '001b21':'Intel','0c8bfd':'Intel','58fb84':'Intel',
+      '7c8334':'Apple','f4f15a':'Apple','dca904':'Apple',
+      'e4ce8f':'Apple','9810e8':'Apple','f0dbe2':'Apple',
+    };
+    function ouiLookup(mac) {
+      const prefix = mac.replace(/[:-]/g,'').toLowerCase().slice(0,6);
+      return OUI_VENDORS[prefix] || null;
+    }
+
+    // 위에서 MAC 추정 라인이 들어갔다면 벤더 추가
+    for (let li=0; li<lines.length; li++) {
+      const m = lines[li].match(/([0-9A-F]{2}[:-]){5}[0-9A-F]{2}/);
+      if (m) {
+        const vendor = ouiLookup(m[0]);
+        if (vendor && !lines[li].includes('→')) lines[li] += `  → ${vendor}`;
+      }
+    }
+
+    // ═══ Cached\Volume / VolumeMountPoints binary ═══
+    if (pathLo.includes('mountpoints2') || pathLo.includes('volume')) {
+      if (n===0x10) {
+        // GUID 형태의 Volume ID
+        const g = tryGUID(0);
+        if (g) lines.push(`💿 Volume GUID: ${g.guid}`);
+      }
+    }
+
+    // ═══ Multimedia\Audio Device GUID ═══
+    if (pathLo.includes('mmdevices\\audio')) {
+      if (n===16) {
+        const g = tryGUID(0);
+        if (g) lines.push(`🔊 오디오 장치 GUID: ${g.guid}`);
+      }
+      if ((nameLo==='deviceformat'||nameLo==='deviceformatdefault') && n>=18) {
+        // WAVEFORMATEX: wFormatTag(2)+nChannels(2)+nSamplesPerSec(4)+nAvgBytesPerSec(4)+nBlockAlign(2)+wBitsPerSample(2)+cbSize(2)
+        const fmt = u16(0), ch = u16(2), sr = u32(4), bps = u16(14);
+        const fmtName = {1:'PCM',3:'IEEE Float',6:'ALaw',7:'µLaw',0xFFFE:'Extensible'}[fmt] || `0x${fmt.toString(16)}`;
+        lines.push(`🔊 ${fmtName} ${sr}Hz ${ch}ch ${bps}-bit`);
+      }
+    }
+
+    // ═══ HardwareConfig\Current ID (16B Hardware Profile GUID) ═══
+    if (pathLo.includes('hardwareconfig') && n===16) {
+      const g = tryGUID(0);
+      if (g) lines.push(`🖥 하드웨어 프로파일 GUID: ${g.guid}`);
+    }
+
+    // ═══ NetBT Adapter Interfaces — Tcpip IP/Mask binary ═══
+    if (pathLo.includes('netbt') || pathLo.includes('tcpip\\parameters\\interfaces')) {
+      if ((nameLo==='ipaddress'||nameLo==='subnetmask'||nameLo==='defaultgateway') && n===4) {
+        lines.push(`📡 ${nameLo}: ${b[0]}.${b[1]}.${b[2]}.${b[3]}`);
+      }
+      if (nameLo==='dhcpipaddress' && n===4) {
+        lines.push(`📡 DHCP 할당 IP: ${b[0]}.${b[1]}.${b[2]}.${b[3]}`);
+      }
+    }
+
+    // ═══ Print Spooler 프린터 설정 ═══
+    if (pathLo.includes('print\\printers') && n>=4) {
+      if (nameLo==='attributes') {
+        const a=u32(0), tags=[];
+        if(a&1)tags.push('큐형식');if(a&2)tags.push('직접인쇄');if(a&4)tags.push('기본');
+        if(a&8)tags.push('네트워크공유');if(a&0x10)tags.push('숨김');if(a&0x20)tags.push('네트워크');
+        if(tags.length) lines.push(`🖨 속성: ${tags.join(', ')}`);
+      }
+      if ((nameLo==='priority'||nameLo==='defaultpriority') && n===4) {
+        lines.push(`🖨 우선순위: ${u32(0)}`);
+      }
+    }
+
+    // ═══ EventLog 설정 ═══
+    if (pathLo.includes('eventlog') && n===4) {
+      if (nameLo==='maxsize'||nameLo==='filesize') lines.push(`📋 최대 크기: ${(u32(0)/1024/1024).toFixed(2)} MB`);
+      if (nameLo==='retention') {
+        const v = u32(0);
+        lines.push(`📋 보존: ${v===0?'필요시 덮어쓰기':v===0xFFFFFFFF?'덮어쓰지 않음':`${v}초 이상 항목 덮어쓰기`}`);
+      }
+    }
+
+    // ═══ Tracing 로그 (RAS / NetSh) ═══
+    if (pathLo.includes('tracing') && nameLo==='maxfilesize' && n===4) {
+      lines.push(`📋 추적 로그 최대 크기: ${(u32(0)/1024).toFixed(0)} KB`);
+    }
+
+    // ═══ TPM\WBCL — Windows Boot Configuration Log 헤더 ═══
+    if (pathLo.includes('tpm\\wbcl') && n>=16) {
+      lines.push(`🔒 TPM 부트 측정 로그 헤더 (${n} bytes)`);
+      const eventType = u32(4);
+      lines.push(`  ▸ 이벤트 타입: ${hex8(eventType)}`);
+    }
+
+    // ═══ COM/CLSID InProcServer32 / TreatAs CLSID (GUID 문자열) ═══
+    if ((pathLo.includes('clsid')||pathLo.includes('appid')||pathLo.includes('interface')) && n===16) {
+      const g=tryGUID(0);
+      if (g) { lines.push(`🔷 COM ${g.guid}`); if(g.known) lines.push(`  → ${g.known}`); }
+    }
+
+    // ═══ PnP HardwareID 리스트 (NUL 구분 UTF-16) ═══
+    if (nameLo==='hardwareid' && n>=4) {
+      const parts = [];
+      let off = 0;
+      while (off < n-2) {
+        const s = tryUtf16(off, (n-off)/2);
+        if (!s) break;
+        parts.push(s);
+        off += (s.length+1)*2;
+      }
+      if (parts.length) {
+        lines.push(`🔌 하드웨어 ID:`);
+        parts.slice(0,5).forEach(p => lines.push(`  ▸ ${p}`));
+        if (parts.length>5) lines.push(`  ... (${parts.length-5}개 더)`);
+      }
+    }
+
+    // ═══ Setup\Upgrade — Windows 업그레이드 정보 ═══
+    if (pathLo.includes('setup\\upgrade') && nameLo==='upgradeflags' && n===4) {
+      const f=u32(0), tags=[];
+      if(f&1)tags.push('In-Place'); if(f&2)tags.push('SwitchSKU');
+      if(f&4)tags.push('SetupComplete'); if(f&8)tags.push('Compressed');
+      if(tags.length) lines.push(`🔄 업그레이드: ${tags.join(', ')}`);
+    }
+
+    // ═══ DefaultMediaCost / Network Cost (Win8+) ═══
+    if (pathLo.includes('networkcost')) {
+      if ((nameLo==='wifi'||nameLo==='wired'||nameLo==='3g'||nameLo==='4g') && n===4) {
+        const cost = {1:'무제한',2:'고정 한도',4:'가변 한도'}[u32(0)] || `알 수 없음(${u32(0)})`;
+        lines.push(`💰 ${nameLo.toUpperCase()} 비용: ${cost}`);
+      }
+    }
+
+    // ═══ Windows Activation Tokens (Vista+) ═══
+    if (pathLo.includes('activation') && n>=4) {
+      if (nameLo==='lastactivationtime' && n===8) {
+        const ft=tryFT(0); if(ft) lines.push(`📅 마지막 활성화: ${ft}`);
+      }
+      if (nameLo==='manual' && n===4) {
+        lines.push(`🔑 수동 활성화: ${u32(0)===1?'예':'아니오'}`);
+      }
+    }
+
+    // ═══ TerminalServer / RDP 캐시 ═══
+    if (pathLo.includes('terminal server')||pathLo.includes('servers\\')) {
+      if (nameLo==='usernamehint' && n>=2) {
+        const s=tryUtf16(0,n/2); if(s) lines.push(`👤 RDP 사용자 힌트: ${s}`);
+      }
+      if (nameLo==='certhash' && n===20) {
+        const h=Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+        lines.push(`🔐 RDP 인증서 SHA-1: ${h.toUpperCase()}`);
+      }
+    }
+
+    // ═══ Windows Defender — Exclusions / Threats ═══
+    if (pathLo.includes('windows defender')||pathLo.includes('microsoft\\defender')) {
+      if (nameLo==='lastscan'||nameLo==='lastscantime') {
+        if (n===8) { const ft=tryFT(0); if(ft) lines.push(`🛡 마지막 스캔: ${ft}`); }
+      }
+    }
+
+    // ═══ Internet Explorer / Edge — IntelliForms (FormData 암호화) ═══
+    if (pathLo.includes('intelliforms\\storage')) {
+      lines.push(`🔐 IE 자동완성 데이터 (DPAPI 암호화, ${n} bytes)`);
+    }
+
+    // ═══ Cached Drive Mapping (NetworkProvider) ═══
+    if (pathLo.includes('networkprovider') && nameLo==='remotepath' && n>=2) {
+      const s=tryUtf16(0,n/2); if(s) lines.push(`🌐 원격 경로: ${s}`);
+    }
+
+    // ═══ MRU + 일반 ID 패턴 ═══
+    if (nameLo==='id' && n===16) {
+      const g=tryGUID(0);
+      if (g) { lines.push(`🆔 GUID ID: ${g.guid}`); }
+    }
+    if ((nameLo==='packageid'||nameLo==='installerid') && n>=2) {
+      const s=tryUtf16(0,n/2); if(s) lines.push(`📦 패키지 ID: ${s}`);
+    }
+
+    // ═══ AppX / UWP Package SID ═══
+    if (pathLo.includes('appx')||pathLo.includes('packages\\')) {
+      if (nameLo==='packagesid' && n>=8 && b[0]===1) {
+        const sid=tryParseSID(0);
+        if (sid) lines.push(`📦 패키지 SID: ${sid}`);
+      }
+    }
+
+    // ═══ Office Trust Records (FILETIME + 4B flags) ═══
+    if (pathLo.includes('office')&&pathLo.includes('trustrecords')) {
+      if (n>=8) {
+        const ft=tryFT(0);
+        if (ft) lines.push(`📅 신뢰 부여 시각: ${ft}`);
+        if (n>=12) {
+          const f=u32(8), tags=[];
+          if(f&1) tags.push('편집 허용');
+          if(f&0x7FFFFFFF) tags.push('콘텐츠 실행 허용');
+          if(tags.length) lines.push(`✅ ${tags.join(', ')}`);
+        }
+      }
+    }
+
+    // ═══ DWM 캐시 (윈도우 위치) ═══
+    if (pathLo.includes('streammru')||pathLo.includes('streams')) {
+      // WINDOWPLACEMENT: 4*5 + 4*4 = 44바이트
+      if (n>=44) {
+        const flags = u32(4);
+        const showCmd = u32(8);
+        const x1 = u32(28), y1 = u32(32), x2 = u32(36), y2 = u32(40);
+        const cmds = {0:'숨김',1:'정상',2:'최소화',3:'최대화',6:'활성최소화',7:'비활성최소화',9:'복원'};
+        lines.push(`🪟 창 상태: ${cmds[showCmd]||showCmd}`);
+        lines.push(`🪟 창 위치: (${x1>0x7FFFFFFF?x1-0x100000000:x1},${y1>0x7FFFFFFF?y1-0x100000000:y1}) ~ (${x2},${y2})`);
+      }
+    }
+
+    // ═══ Cached Volume Info / FVE (BitLocker) ═══
+    if (pathLo.includes('fve')||pathLo.includes('bitlocker')) {
+      if (nameLo==='osv' && n>=8) {
+        const ft=tryFT(0); if(ft) lines.push(`🔒 BitLocker 활성화: ${ft}`);
+      }
+    }
+
+    // ═══ WMI Subscription (potential persistence) ═══
+    if (pathLo.includes('wbem\\repository')) {
+      lines.push(`⚠️ WMI 저장소 데이터 (${n} bytes) — 영구 이벤트 구독 백도어 가능성`);
+    }
+
+    // ═══ ROT13 자동 감지 (UserAssist 외) ═══
+    // 값 이름이 ROT13처럼 보이면 디코딩 시도
+    if (valueName && /^[A-Za-z0-9{}.,\\:_+\-\s]+$/.test(valueName) && valueName.length>5) {
+      const decoded = rot13(valueName);
+      // 디코딩 결과가 일반 경로/파일명처럼 보이면 표시
+      if (/(\.exe|\.dll|\.lnk|program files|windows|users\\)/i.test(decoded) && decoded !== valueName) {
+        lines.push(`🔓 ROT13 디코드: ${decoded}`);
+      }
+    }
+
+    // ══════════════════════════════════
+    //  범용 추론 (전용 해석 실패 시)
+    // ══════════════════════════════════
+
+    // 범용: SID 구조 감지
+    if (lines.length===0 && n>=8 && b[0]===1 && b[1]>=1 && b[1]<=15) {
+      const sid=tryParseSID(0);
+      if (sid) {
+        lines.push(`🔑 SID: ${sid}`);
+        const desc=SID_NAMES[sid]||(sid.startsWith('S-1-5-21-')?'도메인/로컬 계정 SID':null);
+        if (desc) lines.push(`  → ${desc}`);
+      }
+    }
+
+    // 범용: GUID 감지 (16바이트)
+    if (lines.length===0 && n===16) {
+      const g=tryGUID(0);
+      if (g&&g.guid) { lines.push(`🔷 GUID: ${g.guid}`); if(g.known) lines.push(`  → ${g.known}`); }
+    }
+
+    // 범용: FILETIME 스캔
+    if (lines.length===0) {
+      const fts=[];
+      for (let i=0;i<=n-8;i+=4) {
+        const ft=tryFT(i); if(ft) { fts.push(`+${i}: ${ft}`); if(fts.length>=3) break; }
+      }
+      if (fts.length) lines.push('📅 FILETIME 감지: ' + fts.join('  /  '));
+    }
+
+    // 범용: SYSTEMTIME (16바이트)
+    if (lines.length===0 && n===16) {
+      const st=tryST(0); if(st) lines.push(`📅 SYSTEMTIME: ${st}`);
+    }
+
+    // 범용: UTF-16 LE 문자열
+    if (lines.length===0 && n>=4) {
+      const s=tryUtf16(0,Math.min(n/2,128));
+      if (s&&s.length>=3) lines.push(`📝 UTF-16 문자열: "${s}"`);
+    }
+
+    // 범용: ASCII 문자열
+    if (lines.length===0 && n>=3) {
+      const s=tryAscii(0,Math.min(n,256));
+      if (s) lines.push(`📝 ASCII 문자열: "${s}"`);
+    }
+
+    // 범용: 4바이트 DWORD
+    if (lines.length===0 && n===4) {
+      const v=u32(0);
+      lines.push(`🔢 DWORD: ${v}  (${hex8(v)})`);
+    }
+
+    // 범용: 8바이트 QWORD
+    if (lines.length===0 && n===8) {
+      const v=u64(0);
+      lines.push(`🔢 QWORD: ${v}  (0x${v.toString(16).toUpperCase().padStart(16,'0')})`);
+    }
+
+    // 범용: 16바이트 → IPv6 가능성
+    if (lines.length===0 && n===16) {
+      const seg=[];
+      for (let i=0;i<16;i+=2) seg.push(((b[i]<<8)|b[i+1]).toString(16));
+      lines.push(`🌐 IPv6 추정: ${seg.join(':')}`);
+    }
+
+    // 범용: 4바이트 IPv4 추정
+    if (lines.length===0 && n===4) {
+      lines.push(`🌐 IPv4 추정: ${b[0]}.${b[1]}.${b[2]}.${b[3]}`);
+    }
+
+    // 범용: 6바이트 → MAC 주소 추정
+    if (lines.length===0 && n===6) {
+      const mac = Array.from(b).map(x=>x.toString(16).padStart(2,'0').toUpperCase()).join(':');
+      lines.push(`📡 MAC 추정: ${mac}`);
+    }
+
+    // 마지막 폴백: 헥스 덤프 프리뷰 (앞 32바이트 + ASCII)
+    if (lines.length===0) {
+      const head = Array.from(b.slice(0, Math.min(32, n)));
+      const hexs = head.map(x=>x.toString(16).padStart(2,'0')).join(' ');
+      const asc  = head.map(x=>(x>=32&&x<127)?String.fromCharCode(x):'.').join('');
+      lines.push(`📦 크기: ${n} bytes`);
+      lines.push(`🔍 헥스: ${hexs}${n>32?' ...':''}`);
+      lines.push(`📜 ASCII: ${asc}${n>32?'...':''}`);
+    }
+
+    return lines.length ? lines.join('\n') : null;
+  }
+
+  function getValueHint(keyPath, valueName) {
+    const pathLo = keyPath.toLowerCase().replace(/\//g, '\\');
+    const nameLo = (valueName || '').toLowerCase();
+    for (const [pattern, hints] of Object.entries(VALUE_HINTS)) {
+      if (pathLo.endsWith('\\' + pattern) || pathLo.endsWith(pattern)
+          || pathLo.includes('\\' + pattern + '\\')) {
+        const h = hints[nameLo] || hints['*'];
+        if (h) return h;
+      }
+    }
+    return null;
+  }
+
+  // ── 검색 ──
+  const treeContainer = document.getElementById('treeContainer');
+  document.getElementById('treeSearch').addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    if (!q) {
+      document.querySelectorAll('#treeInner .reg-row, #treeInner details')
+        .forEach(el => el.style.display = '');
+      document.getElementById('treePlaceholder').style.display = 'none';
+      return;
+    }
+    const matches = new Set(Object.keys(KV).filter(p => p.toLowerCase().includes(q)));
+    document.querySelectorAll('#treeInner .reg-row').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#treeInner details').forEach(el => el.style.display = 'none');
+    let found = 0;
+    matches.forEach(path => {
+      const els = document.querySelectorAll(`#treeInner [data-path="${CSS.escape(path)}"]`);
+      els.forEach(el => {
+        el.style.display = '';
+        let p = el.parentElement;
+        while (p && p !== treeInner) {
+          if (p.tagName === 'DETAILS') { p.style.display = ''; p.open = true; }
+          p = p.parentElement;
+        }
+        found++;
+      });
+    });
+    document.getElementById('treePlaceholder').style.display = found ? 'none' : '';
+  });
+
+  // ── 정확한 경로 자동 이동 (goPath) ──
+  function gotoPath(rawPath) {
+    if (!rawPath) return;
+    // 정규화: 슬래시·역슬래시 통일, 양끝 공백/슬래시 제거
+    const norm = (s) => s.trim().replace(/\//g,'\\').replace(/^[\\/]+|[\\/]+$/g, '').toLowerCase();
+    const target = norm(rawPath);
+    const status = document.getElementById('goPathStatus');
+    // KV 키 중에서 매칭 시도 (정확·끝부분·부분 매칭 순)
+    const keys = Object.keys(KV);
+    let matched = keys.find(p => norm(p) === target);
+    if (!matched) matched = keys.find(p => norm(p).endsWith(target));
+    if (!matched) matched = keys.find(p => norm(p).endsWith('\\' + target));
+    if (!matched) matched = keys.find(p => norm(p).includes(target));
+    if (!matched) {
+      status.innerHTML = '<span style="color:#ef4444;">❌ 일치하는 키 없음</span>';
+      return;
+    }
+    // 검색박스 초기화 (모든 항목 보이게)
+    document.getElementById('treeSearch').value = '';
+    document.querySelectorAll('#treeInner .reg-row, #treeInner details')
+      .forEach(el => el.style.display = '');
+    document.getElementById('treePlaceholder').style.display = 'none';
+    // 부모 details 모두 열기
+    const els = document.querySelectorAll(`#treeInner [data-path="${CSS.escape(matched)}"]`);
+    if (els.length === 0) {
+      status.innerHTML = '<span style="color:#f59e0b;">⚠️ 키 발견했지만 트리에 미렌더링</span>';
+      return;
+    }
+    const el = els[els.length - 1];
+    let p = el.parentElement;
+    while (p && p.id !== 'treeInner') {
+      if (p.tagName === 'DETAILS') p.open = true;
+      p = p.parentElement;
+    }
+    // 클릭으로 선택
+    selectKey(matched);
+    // 스크롤 + 하이라이트
+    setTimeout(() => {
+      el.scrollIntoView({block: 'center', behavior: 'smooth'});
+      el.style.transition = 'background .3s';
+      const orig = el.style.background;
+      el.style.background = 'rgba(245,158,11,.4)';
+      setTimeout(() => el.style.background = orig, 1500);
+    }, 50);
+    status.innerHTML = `<span style="color:#22c55e;">✓ 이동: <code>${matched}</code></span>`;
+  }
+
+  const goPathInput = document.getElementById('goPath');
+  goPathInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); gotoPath(goPathInput.value); }
+  });
+  goPathInput.addEventListener('paste', e => {
+    // 붙여넣기 즉시 이동
+    setTimeout(() => gotoPath(goPathInput.value), 10);
+  });
+  // URL 파라미터 ?path=... 자동 이동
+  const urlParams = new URLSearchParams(location.search);
+  const initialPath = urlParams.get('path');
+  if (initialPath) {
+    goPathInput.value = initialPath;
+    setTimeout(() => gotoPath(initialPath), 300);
+  }
+
+  // ── 포렌식 모달 ──
+  function openFinding(idx) {
+    const f = FINDINGS[idx];
+    if (!f) return;
+    const sev = {high:'#ef4444', medium:'#f59e0b', info:'#6b7280'}[f.severity] || '#6b7280';
+    document.getElementById('fModalTitle').innerHTML =
+      `<span style="color:${sev};">●</span> ${escH(f.category_ko)} — ${escH(f.description)}`;
+    document.getElementById('fModalPath').textContent = f.key_path;
+    document.getElementById('fModalDesc').textContent = '';
+
+    // Values
+    const valsEl = document.getElementById('fModalVals');
+    if (f.values && f.values.length > 0) {
+      valsEl.innerHTML = `
+        <div class="det-section-title mb-2"><i class="bi bi-list-ul me-1"></i>값 (${f.values.length}개)</div>
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:.4rem; overflow:hidden; margin-bottom:1rem;">
+          <table style="width:100%; font-size:.8rem; border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid var(--border); background:var(--bg-card);">
+              <th style="padding:.35rem .6rem; color:var(--text-dim); font-weight:500; width:200px;">이름</th>
+              <th style="padding:.35rem .6rem; color:var(--text-dim); font-weight:500; width:120px;">형식</th>
+              <th style="padding:.35rem .6rem; color:var(--text-dim); font-weight:500;">값</th>
+            </tr></thead>
+            <tbody>${f.values.map(v => `
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:.3rem .6rem; color:var(--accent); word-break:break-all;">${escH(v.n)}</td>
+                <td style="padding:.3rem .6rem; color:#6b7280; font-family:monospace; font-size:.75rem;">${escH(v.t)}</td>
+                <td style="padding:.3rem .6rem; word-break:break-all; color:var(--text);">${escH(v.v)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } else {
+      valsEl.innerHTML = '';
+    }
+
+    // Subkeys
+    const subsEl = document.getElementById('fModalSubs');
+    if (f.subkeys && f.subkeys.length > 0) {
+      subsEl.innerHTML = `
+        <div class="det-section-title mb-2"><i class="bi bi-folder2 me-1"></i>하위 키 (${f.subkeys.length}개)</div>
+        <div style="display:flex; flex-direction:column; gap:.3rem;">
+          ${f.subkeys.map(sk => `
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:.4rem; padding:.5rem .75rem;">
+              <div style="font-weight:600; font-size:.82rem; color:var(--accent); margin-bottom:.2rem;">
+                <i class="bi bi-folder2 me-1"></i>${escH(sk.name)}
+                ${sk.ts ? `<span class="text-dim ms-2" style="font-size:.72rem; font-weight:400;">${escH(sk.ts)}</span>` : ''}
+              </div>
+              ${sk.vals && sk.vals.length ? sk.vals.map(sv => `
+                <div style="display:flex; gap:.5rem; font-size:.77rem; padding:.1rem 0;">
+                  <span style="color:var(--accent); min-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escH(sv.n)}</span>
+                  <span style="color:#6b7280; min-width:80px; font-family:monospace; font-size:.72rem;">${escH(sv.t)}</span>
+                  <span style="flex:1; word-break:break-all; color:var(--text);">${escH(sv.v)}</span>
+                </div>`).join('') : '<span class="text-dim" style="font-size:.77rem;">(값 없음)</span>'}
+            </div>`).join('')}
+        </div>`;
+    } else {
+      subsEl.innerHTML = '';
+    }
+
+    const modal = document.getElementById('findingModal');
+    modal.style.display = 'flex';
+  }
+
+  function closeFinding() {
+    document.getElementById('findingModal').style.display = 'none';
+  }
+  document.getElementById('findingModal').addEventListener('click', function(e) {
+    if (e.target === this) closeFinding();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFinding(); });
+  </script>
+
+  {% endif %}
+</div>
+
+<style>
+/* ── 트리 ── */
+.reg-row {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .32rem .6rem; cursor: pointer;
+  font-size: .82rem; color: var(--text);
+  border-bottom: 1px solid transparent;
+  white-space: nowrap; user-select: none;
+  transition: background .1s;
+}
+.reg-row:hover { background: rgba(255,255,255,.04); }
+.reg-row.active { background: rgba(0,212,255,.1); color: var(--accent); }
+.reg-row summary { list-style: none; }
+.reg-row summary::-webkit-details-marker { display: none; }
+details > summary.reg-row::before {
+  content: '▶'; font-size: .6rem; color: var(--text-dim);
+  margin-right: .2rem; transition: transform .15s;
+  display: inline-block; min-width: 10px;
+}
+details[open] > summary.reg-row::before { transform: rotate(90deg); }
+
+.reg-folder-icon { color: #f59e0b; font-size: .82rem; flex-shrink: 0; }
+.reg-leaf-icon   { color: var(--text-dim); font-size: .78rem; flex-shrink: 0; }
+.reg-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.val-chip  { background: rgba(0,212,255,.15); color: var(--accent);
+             font-size: .67rem; padding: .05rem .3rem; border-radius: 3px; flex-shrink: 0; }
+.trunc-chip { background: rgba(245,158,11,.15); color: #f59e0b;
+              font-size: .67rem; padding: .05rem .3rem; border-radius: 3px; flex-shrink: 0; }
+.forensic-chip { font-size: .65rem; padding: .05rem .35rem; border-radius: 3px;
+                 flex-shrink: 0; font-weight: 600; }
+.val-type { cursor: help; }
+.val-type:hover::after {
+  content: attr(title); position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  background: #1e293b; color: #e2e8f0; font-size: .75rem; padding: .35rem .65rem;
+  border-radius: .35rem; white-space: nowrap; border: 1px solid #334155;
+  pointer-events: none; z-index: 999;
+}
+
+/* ── 값 패널 ── */
+.val-block {
+  border-bottom: 1px solid var(--border);
+}
+.val-block:first-child .val-row { border-top: 1px solid var(--border); }
+.val-row {
+  display: grid; grid-template-columns: 190px 110px 1fr;
+  gap: .5rem; padding: .4rem .5rem; font-size: .81rem;
+}
+.val-name  { color: var(--accent); word-break: break-all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.val-type  { color: #6b7280; font-family: monospace; font-size: .75rem; align-self: start; }
+.val-value { color: var(--text); word-break: break-all; font-family: monospace; font-size: .78rem; }
+.val-hint  {
+  padding: .25rem .5rem .35rem 2.2rem; font-size: .74rem;
+  color: #94a3b8; line-height: 1.4;
+  border-top: 1px dashed var(--border);
+  background: rgba(255,255,255,.015);
+}
+
+/* ── 포렌식 카드 ── */
+.finding-card {
+  padding: .65rem .8rem; border-radius: .5rem; border: 1px solid;
+  cursor: pointer; transition: filter .15s;
+}
+.finding-card:hover { filter: brightness(1.1); }
+
+/* ── 모달 섹션 타이틀 ── */
+.det-section-title {
+  font-size: .78rem; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 1px solid var(--border); padding-bottom: .3rem;
+}
+</style>
+{% endblock %}

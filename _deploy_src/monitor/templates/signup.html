@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container" style="max-width:480px; padding-top:110px; padding-bottom:60px;">
+  <div class="tool-panel">
+    <div class="text-center mb-4">
+      <i class="bi bi-person-plus-fill" style="font-size:2.5rem; color:var(--accent);"></i>
+      <h4 class="mt-2 fw-bold">회원가입</h4>
+      <p class="text-dim small mb-0">ForensicLab 계정 만들기</p>
+    </div>
+    {% if error %}
+    <div class="alert-error mb-3"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label-sm">아이디 <span class="text-dim">(3자 이상)</span></label>
+        <input type="text" name="username" class="form-control" placeholder="아이디 입력" required minlength="3" autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label-sm">이메일</label>
+        <input type="email" name="email" class="form-control" placeholder="이메일 입력" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label-sm">비밀번호 <span class="text-dim">(6자 이상)</span></label>
+        <input type="password" name="password" class="form-control" placeholder="비밀번호 입력" required minlength="6">
+      </div>
+      <div class="mb-4">
+        <label class="form-label-sm">비밀번호 확인</label>
+        <input type="password" name="confirm" class="form-control" placeholder="비밀번호 재입력" required>
+      </div>
+      <button type="submit" class="btn btn-accent w-100">
+        <i class="bi bi-person-check me-1"></i>가입하기
+      </button>
+    </form>
+    <hr style="border-color:var(--border);" class="my-4">
+    <p class="text-center text-dim small mb-0">
+      이미 계정이 있으신가요? <a href="/login" class="text-accent">로그인</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

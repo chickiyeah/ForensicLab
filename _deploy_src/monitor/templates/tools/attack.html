@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">MITRE ATT&CK 매핑</span></div>
+<h1 class="page-title"><i class="bi bi-bullseye me-2 text-accent"></i>MITRE ATT&CK 매핑</h1>
+<p class="page-sub">분석 결과 → ATT&CK 기법 자동 매핑</p></div></div>
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-5"><div class="tool-panel">
+<form method="POST">
+<label class="form-label-sm">분석 결과 (로그·텍스트)</label>
+<textarea name="text" class="form-control mb-3" rows="14" style="font-family:monospace; font-size:.74rem;" placeholder="powershell -enc ...&#10;reg add HKLM\Software\Microsoft\Windows\CurrentVersion\Run..."></textarea>
+<button class="btn btn-accent w-100"><i class="bi bi-bullseye me-1"></i>매핑</button>
+</form><div class="text-dim small mt-2">DB: {{ db_size }}개 기법</div></div></div>
+
+<div class="col-lg-7">{% if result %}
+<div class="tool-panel mb-2"><h6 class="panel-title">탐지된 기법 ({{ result.total_techniques }})</h6>
+<div class="d-flex flex-wrap gap-2 mb-2">
+{% for tactic, count in result.tactics.items() %}
+<span class="tag" style="background:rgba(239,68,68,.15);color:#ef4444;">{{ tactic }} ({{ count }})</span>
+{% endfor %}</div>
+{% if result.killchain_stage %}<div><strong>주요 단계:</strong> {{ result.killchain_stage }}</div>{% endif %}
+</div>
+
+{% for m in result.matches %}<div class="tool-panel mb-2">
+<div class="d-flex justify-content-between"><div>
+<strong style="color:var(--accent);">{{ m.id }}</strong> {{ m.name }}</div>
+<a href="{{ m.url }}" target="_blank"><span class="tag">{{ m.tactic }}</span></a></div>
+<p class="text-dim small mb-1">{{ m.description }}</p>
+<div class="small"><strong>키워드:</strong>
+{% for k in m.matched_keywords %}<code class="me-1">{{ k }}</code>{% endfor %}</div>
+</div>{% endfor %}
+{% endif %}</div></div></div>{% endblock %}

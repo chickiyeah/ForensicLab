@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">HAR 분석</span></div>
+<h1 class="page-title"><i class="bi bi-globe2 me-2 text-accent"></i>HAR 분석</h1>
+<p class="page-sub">브라우저 HAR 캡처 → 요청·응답·시간·도메인 통계.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" multiple required>
+<div class="form-hint mb-3"><i class="bi bi-info-circle me-1"></i>여러 파일 동시 업로드 가능</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button></form></div></div></div>
+{% else %}{% for r in result.files %}
+<div class="tool-panel mb-3"><h6 class="panel-title">{{ r.filename }}{% if r.total %} — {{ r.total }}개 요청{% endif %}</h6>
+{% if r.error %}<div class="text-danger">{{ r.error }}</div>{% else %}
+<div class="row mb-2"><div class="col-md-4"><strong>메서드</strong>
+{% for m, c in r.methods %}<div class="d-flex justify-content-between"><code>{{ m }}</code><span>{{ c }}</span></div>{% endfor %}</div>
+<div class="col-md-4"><strong>상태</strong>
+{% for s, c in r.statuses %}<div class="d-flex justify-content-between"><code>{{ s }}</code><span>{{ c }}</span></div>{% endfor %}</div>
+<div class="col-md-4"><strong>상위 호스트</strong>
+{% for h, c in r.top_hosts %}<div class="d-flex justify-content-between"><code style="font-size:.72rem;">{{ h }}</code><span>{{ c }}</span></div>{% endfor %}</div></div>
+<div style="max-height:400px; overflow-y:auto;"><table class="table table-sm" style="font-size:.76rem;">
+<thead><tr class="text-dim"><th>메서드</th><th>URL</th><th>상태</th><th>크기</th><th>시간</th></tr></thead><tbody>
+{% for req in r.requests %}<tr><td><code>{{ req.method }}</code></td><td style="word-break:break-all; max-width:400px;">{{ req.url }}</td>
+<td>{% if req.status >= 400 %}<span style="color:#ef4444">{{ req.status }}</span>{% elif req.status >= 300 %}<span style="color:#f59e0b">{{ req.status }}</span>{% else %}<span style="color:#22c55e">{{ req.status }}</span>{% endif %}</td>
+<td>{{ req.size }}</td><td>{{ req.duration }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}</div>{% endfor %}
+{% endif %}</div>{% endblock %}

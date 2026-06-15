@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">소개</span>
+    </div>
+    <h1 class="page-title">ForensicLab 소개</h1>
+    <p class="page-sub">디지털 포렌식 분석을 위한 통합 웹 플랫폼</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- What is ForensicLab -->
+  <div class="intro-section">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <span class="section-tag">About</span>
+        <h2 class="section-title mt-2">디지털 포렌식이란?</h2>
+        <p class="intro-text">
+          디지털 포렌식(Digital Forensics)은 컴퓨터, 모바일 기기, 네트워크 등의 디지털 기기에서
+          법적 효력을 가진 디지털 증거를 <strong>수집, 보존, 분석, 보고</strong>하는 과학적 절차입니다.
+        </p>
+        <p class="intro-text">
+          사이버 범죄 수사, 데이터 침해 사고 대응, 내부 보안 감사, 법적 분쟁 대응 등
+          다양한 영역에서 핵심적인 역할을 합니다. 디지털 증거는 휘발성이 강하고 위변조가 쉽기 때문에
+          체계적인 도구와 절차가 반드시 필요합니다.
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <div class="intro-diagram">
+          <div class="diag-step">
+            <div class="diag-icon fic-cyan"><i class="bi bi-collection"></i></div>
+            <div><strong>수집</strong><br><span class="text-dim small">증거 획득 및 이미징</span></div>
+          </div>
+          <div class="diag-arrow"><i class="bi bi-arrow-right"></i></div>
+          <div class="diag-step">
+            <div class="diag-icon fic-purple"><i class="bi bi-shield-lock"></i></div>
+            <div><strong>보존</strong><br><span class="text-dim small">무결성 확보·해시 검증</span></div>
+          </div>
+          <div class="diag-arrow"><i class="bi bi-arrow-right"></i></div>
+          <div class="diag-step">
+            <div class="diag-icon fic-amber"><i class="bi bi-search"></i></div>
+            <div><strong>분석</strong><br><span class="text-dim small">도구 기반 심층 분석</span></div>
+          </div>
+          <div class="diag-arrow"><i class="bi bi-arrow-right"></i></div>
+          <div class="diag-step">
+            <div class="diag-icon fic-green"><i class="bi bi-file-earmark-text"></i></div>
+            <div><strong>보고</strong><br><span class="text-dim small">법적 효력 보고서</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="intro-section">
+    <div class="text-center mb-5">
+      <span class="section-tag">Tools</span>
+      <h2 class="section-title mt-2">제공 분석 도구</h2>
+    </div>
+    <div class="row g-4">
+
+      <div class="col-md-6">
+        <div class="intro-tool-card">
+          <div class="d-flex gap-3">
+            <div class="tool-icon fic-cyan flex-shrink-0"><i class="bi bi-fingerprint"></i></div>
+            <div>
+              <h5 class="tool-title">해시 검증 (Hash Verification)</h5>
+              <p class="tool-desc">
+                MD5·SHA-1·SHA-256·SHA-512 알고리즘으로 파일의 해시값을 계산합니다.
+                디지털 증거는 획득 전후의 해시값이 일치해야 법적 효력을 가집니다.
+                두 해시값을 직접 비교하는 무결성 검증 기능도 제공합니다.
+              </p>
+              <a href="/tools/hash" class="feature-link">도구 사용 <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="intro-tool-card">
+          <div class="d-flex gap-3">
+            <div class="tool-icon fic-purple flex-shrink-0"><i class="bi bi-file-earmark-binary"></i></div>
+            <div>
+              <h5 class="tool-title">파일 카빙 (File Carving)</h5>
+              <p class="tool-desc">
+                RAW 디스크 이미지에서 파일 헤더/푸터 시그니처를 스캔하여 삭제되었거나 손상된
+                GIF·JPEG·PNG·PDF·ZIP 파일을 복구합니다.
+                파일 시스템이 없더라도 바이너리 수준에서 파일을 추출합니다.
+              </p>
+              <a href="/tools/carve" class="feature-link">도구 사용 <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="intro-tool-card">
+          <div class="d-flex gap-3">
+            <div class="tool-icon fic-amber flex-shrink-0"><i class="bi bi-hdd"></i></div>
+            <div>
+              <h5 class="tool-title">MBR 분석 (MBR Analysis)</h5>
+              <p class="tool-desc">
+                디스크 이미지의 Master Boot Record(MBR) 파티션 테이블을 파싱하고
+                VBR(Volume Boot Record) 시그니처 스캔으로 숨겨진 파티션을 탐지합니다.
+                NTFS·FAT32·exFAT 구조를 지원하며 헥스 덤프로 MBR 원본을 확인할 수 있습니다.
+              </p>
+              <a href="/tools/mbr" class="feature-link">도구 사용 <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="intro-tool-card">
+          <div class="d-flex gap-3">
+            <div class="tool-icon fic-green flex-shrink-0"><i class="bi bi-braces"></i></div>
+            <div>
+              <h5 class="tool-title">문자열 추출 (Strings Extraction)</h5>
+              <p class="tool-desc">
+                실행 파일, 펌웨어, 디스크 이미지 등의 바이너리에서
+                ASCII 및 UTF-16 LE Unicode 인쇄 가능 문자열을 추출합니다.
+                악성코드 분석, 암호 탐지, URL·이메일 식별에 활용됩니다.
+              </p>
+              <a href="/tools/strings" class="feature-link">도구 사용 <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="intro-tool-card">
+          <div class="d-flex gap-3">
+            <div class="tool-icon fic-red flex-shrink-0"><i class="bi bi-journal-text"></i></div>
+            <div>
+              <h5 class="tool-title">로그 분석 (Log Analysis)</h5>
+              <p class="tool-desc">
+                Apache·Nginx·Syslog·Windows Event Log를 자동 파싱합니다.
+                상위 접속 IP, HTTP 상태 코드 분포, 디렉토리 트래버설·SQL 인젝션·
+                웹쉘 업로드 시도 등 공격 패턴을 자동 탐지하여 시각화합니다.
+              </p>
+              <a href="/tools/log" class="feature-link">도구 사용 <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Principles -->
+  <div class="intro-section">
+    <div class="text-center mb-5">
+      <span class="section-tag">Principles</span>
+      <h2 class="section-title mt-2">포렌식 분석 원칙</h2>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="principle-card">
+          <i class="bi bi-shield-check principle-icon text-accent"></i>
+          <h6>무결성 보존</h6>
+          <p>원본 증거는 절대 변경하지 않습니다. 쓰기 방지 장치와 해시 검증을 통해 증거의 무결성을 보장합니다.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="principle-card">
+          <i class="bi bi-journal-check principle-icon" style="color:#a78bfa"></i>
+          <h6>문서화·재현성</h6>
+          <p>모든 분석 과정은 문서화되어야 하며, 제3자가 동일한 절차로 같은 결과를 재현할 수 있어야 합니다.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="principle-card">
+          <i class="bi bi-lock principle-icon" style="color:#f59e0b"></i>
+          <h6>증거 관리 연속성</h6>
+          <p>증거 획득부터 제출까지 chain of custody(증거 보관 연속성)를 유지하여 법적 효력을 확보합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

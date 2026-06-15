@@ -1,0 +1,115 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<h1 class="page-title"><i class="bi bi-mortarboard-fill me-2 text-accent"></i>초보자 가이드</h1>
+<p class="page-sub">포렌식이 처음? 시나리오를 선택하면 무엇을 어떤 순서로 분석해야 하는지 단계별로 안내합니다.</p>
+</div></div>
+
+<div class="container pb-5">
+
+<div class="alert mb-3" style="background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.3); border-radius:.5rem; padding:1rem;">
+<div class="d-flex align-items-start gap-2">
+<i class="bi bi-info-circle-fill" style="font-size:1.4rem; color:#00d4ff; flex-shrink:0;"></i>
+<div>
+<strong style="color:#00d4ff;">사용 방법</strong>
+<div class="text-dim small mt-1">
+1. 상황에 맞는 <strong>시나리오 카드</strong>를 클릭하세요<br>
+2. 각 단계의 <strong>도구 버튼</strong>을 차례대로 누르면 새 탭에서 해당 분석 도구가 열립니다<br>
+3. 각 단계의 <strong>"왜?" "팁"</strong>을 읽고 결과를 다음 단계로 이어갑니다<br>
+4. 더 자세한 도구 사용법은 <a href="/tools/help" class="text-accent">전체 도움말</a>, 핵심 경로는 <a href="/tools/forensic-paths" class="text-accent">포렌식 경로 가이드</a>
+</div>
+</div>
+</div>
+</div>
+
+<div class="row g-2 mb-3" id="scenarios">
+{% for s in scenarios %}
+<div class="col-md-6 col-lg-4">
+<a href="#{{ s.id }}" class="tool-card-link" onclick="event.preventDefault(); openScenario('{{ s.id }}')">
+<div class="tool-card h-100" style="cursor:pointer;">
+<div class="d-flex align-items-center gap-2 mb-2">
+<i class="bi {{ s.icon }}" style="font-size:1.6rem; color:var(--accent);"></i>
+<strong>{{ s.title }}</strong>
+</div>
+<p class="text-dim mb-2" style="font-size:.82rem;">{{ s.desc }}</p>
+<div class="d-flex justify-content-between" style="font-size:.72rem;">
+<span class="tag" style="background:{% if s.difficulty == '입문' %}rgba(34,197,94,.15);color:#22c55e
+{%- elif s.difficulty == '초급' %}rgba(0,212,255,.15);color:#00d4ff
+{%- elif s.difficulty == '중급' %}rgba(245,158,11,.15);color:#f59e0b
+{%- else %}rgba(239,68,68,.15);color:#ef4444{%- endif %};">{{ s.difficulty }}</span>
+<span class="text-dim"><i class="bi bi-clock me-1"></i>{{ s.time }}</span>
+<span class="text-dim">{{ s.steps|length }}단계</span>
+</div>
+</div></a></div>
+{% endfor %}
+</div>
+
+<!-- 각 시나리오 상세 -->
+{% for s in scenarios %}
+<div id="{{ s.id }}" class="scenario-detail tool-panel mb-3" style="display:none;">
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+<div>
+<h4 class="mb-1"><i class="bi {{ s.icon }} me-2 text-accent"></i>{{ s.title }}</h4>
+<div class="text-dim small">{{ s.desc }}</div>
+</div>
+<button class="btn btn-sm btn-outline-secondary" onclick="closeAll()"><i class="bi bi-x me-1"></i>닫기</button>
+</div>
+
+<div class="position-relative" style="padding-left:2rem;">
+<div style="position:absolute; left:.8rem; top:0; bottom:0; width:2px; background:var(--border);"></div>
+
+{% for step in s.steps %}
+<div class="mb-3" style="position:relative;">
+<div style="position:absolute; left:-1.7rem; top:.2rem; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#000; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.8rem;">
+{{ loop.index }}
+</div>
+<div style="background:var(--bg); padding:.7rem 1rem; border-radius:.4rem; border:1px solid var(--border);">
+<div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+<strong>{{ step.name }}</strong>
+<div>
+{% if step.tool and step.tool.startswith('/') %}
+<a href="{{ step.tool }}" target="_blank" class="btn btn-sm btn-accent" style="font-size:.74rem;">
+<i class="bi bi-arrow-up-right me-1"></i>도구 열기</a>
+{% endif %}
+{% if step.path %}
+<button class="btn btn-sm btn-outline-info" style="font-size:.74rem;"
+        onclick="navigator.clipboard.writeText('{{ step.path }}'); this.innerHTML='<i class=&quot;bi bi-check2&quot;></i> 복사됨'; setTimeout(()=>this.innerHTML='<i class=&quot;bi bi-clipboard&quot;></i> 경로 복사',1500);">
+<i class="bi bi-clipboard me-1"></i>경로 복사</button>
+{% endif %}
+</div>
+</div>
+{% if step.path %}<code style="font-size:.74rem; color:#f59e0b; word-break:break-all;">{{ step.path }}</code>{% endif %}
+{% if step.event %}<code style="font-size:.74rem; color:#f59e0b;">EventID {{ step.event }}</code>{% endif %}
+{% if step.sql %}<code style="font-size:.74rem; display:block; margin:.2rem 0; color:#10b981;">{{ step.sql }}</code>{% endif %}
+<div class="text-dim mt-1" style="font-size:.82rem;">{{ step.why }}</div>
+{% if step.tip %}<div class="mt-1 p-2" style="background:rgba(245,158,11,.08); border-left:2px solid #f59e0b; border-radius:.3rem; font-size:.78rem;">
+<strong style="color:#f59e0b;">💡</strong> {{ step.tip }}</div>{% endif %}
+</div>
+</div>
+{% endfor %}
+
+</div>
+</div>
+{% endfor %}
+
+</div>
+
+<script>
+function openScenario(id) {
+  document.querySelectorAll('.scenario-detail').forEach(el => el.style.display = 'none');
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = '';
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+function closeAll() {
+  document.querySelectorAll('.scenario-detail').forEach(el => el.style.display = 'none');
+  document.getElementById('scenarios').scrollIntoView({ behavior: 'smooth' });
+}
+// 해시 자동 열기
+if (location.hash) {
+  const id = location.hash.slice(1);
+  setTimeout(() => openScenario(id), 100);
+}
+</script>
+{% endblock %}

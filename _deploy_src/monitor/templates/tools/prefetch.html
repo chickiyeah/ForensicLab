@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">Prefetch 분석</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-fast-forward-fill me-2 text-accent"></i>Windows Prefetch 분석</h1>
+    <p class="page-sub">.pf 파일에서 실행 횟수·마지막 8회 실행 시각·참조 파일 경로를 추출합니다 (XP~Win11).</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  {% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+
+  {% if not result %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>.pf 파일 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" multiple class="form-control mb-3" accept=".pf" required>
+          <div class="form-hint mb-3">C:\Windows\Prefetch\&lt;EXE&gt;-&lt;HASH&gt;.pf</div>
+          <button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+        </form>
+        <div class="text-dim small mt-3">
+          <i class="bi bi-info-circle me-1"></i>MAM 압축(Win10+) 프리페치는 libscca-python 라이브러리가 필요합니다.
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <strong>{{ result.filename }}</strong>
+    <span class="text-dim small">{{ result.format }}</span>
+    <span class="ms-auto"><a href="/tools/prefetch" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>새 파일</a></span>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-cpu me-2"></i>실행 정보</h6>
+        <table class="table table-sm">
+          <tr><td class="text-dim">실행 파일</td><td><strong style="color:var(--accent)">{{ result.executable }}</strong></td></tr>
+          {% if result.hash %}<tr><td class="text-dim">PF 해시</td><td><code>{{ result.hash }}</code></td></tr>{% endif %}
+          {% if result.version %}<tr><td class="text-dim">버전</td><td>{{ result.version }} (v{{ result.version_num }})</td></tr>{% endif %}
+          <tr><td class="text-dim">실행 횟수</td><td><strong style="font-size:1.2rem; color:#f59e0b">{{ result.run_count }}</strong>회</td></tr>
+          <tr><td class="text-dim">파일 크기</td><td>{{ result.file_size }} bytes</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-clock-history me-2"></i>마지막 실행 시각 ({{ result.last_runs|length }}개)</h6>
+        {% if result.last_runs %}
+          <ol style="padding-left:1.2rem; font-family:monospace; font-size:.82rem;">
+            {% for t in result.last_runs %}<li>{{ t }}</li>{% endfor %}
+          </ol>
+        {% else %}
+          <div class="text-dim">기록 없음</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if result.volumes %}
+  <div class="tool-panel mb-3">
+    <h6 class="panel-title"><i class="bi bi-hdd-fill me-2"></i>볼륨 정보</h6>
+    {% for v in result.volumes %}
+    <div class="d-flex gap-3 p-2" style="border-bottom:1px solid var(--border);">
+      <code style="color:var(--accent)">{{ v.device_path }}</code>
+      <span class="text-dim small">생성: {{ v.creation_time }}</span>
+      <span class="text-dim small">시리얼: {{ v.serial }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result.files %}
+  <div class="tool-panel">
+    <h6 class="panel-title"><i class="bi bi-file-earmark-binary me-2"></i>참조 파일 ({{ result.files|length }}개)</h6>
+    <div style="max-height:500px; overflow-y:auto; font-family:monospace; font-size:.78rem;">
+      {% for f in result.files %}
+      <div style="padding:.18rem .35rem; border-bottom:1px solid var(--border);">{{ f }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

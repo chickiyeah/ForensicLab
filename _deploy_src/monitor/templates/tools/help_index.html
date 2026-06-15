@@ -1,0 +1,57 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<h1 class="page-title"><i class="bi bi-question-circle me-2 text-accent"></i>전체 도구 도움말</h1>
+<p class="page-sub">160+ 도구의 사용법과 설명을 한눈에. 우상단 검색 박스로 빠르게 찾을 수 있습니다.</p>
+</div></div>
+
+<div class="container pb-5">
+
+<div class="tool-panel mb-3" style="position:sticky; top:60px; z-index:10; background:var(--bg-card);">
+  <div class="position-relative">
+    <i class="bi bi-search position-absolute" style="left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-dim);"></i>
+    <input type="text" id="helpSearch" class="form-control" placeholder="도움말 검색... (예: 메모리, PowerShell, 사용법)" style="padding-left:2.3rem;" autofocus>
+  </div>
+  <div class="text-dim small mt-2" id="helpCount"></div>
+</div>
+
+<div id="helpGrid">
+{% for name, h in helps.items() %}
+<div class="tool-panel mb-2 help-item" data-text="{{ name|lower }} {{ h.what|lower }} {{ h.how|lower }} {{ h.tips|default('')|lower }}">
+  <div class="d-flex align-items-start gap-3">
+    <div style="min-width:120px;">
+      <a href="/tools/{{ name }}" class="d-block">
+        <code style="font-size:.84rem; color:var(--accent);">{{ name }}</code>
+      </a>
+    </div>
+    <div style="flex:1;">
+      <div class="mb-1"><strong>📌</strong> {{ h.what }}</div>
+      <div class="mb-1 text-dim small"><strong>🛠</strong> {{ h.how }}</div>
+      {% if h.input %}<div class="small"><strong class="text-accent">📥 입력:</strong> <code style="font-size:.74rem;">{{ h.input }}</code></div>{% endif %}
+      {% if h.output %}<div class="small"><strong class="text-accent">📤 출력:</strong> {{ h.output }}</div>{% endif %}
+      {% if h.tips %}<div class="mt-2 p-2 small" style="background:rgba(245,158,11,.06); border-left:3px solid #f59e0b; border-radius:.3rem;">💡 {{ h.tips }}</div>{% endif %}
+    </div>
+    <div>
+      <a href="/tools/{{ name }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-right"></i></a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+</div>
+
+<script>
+function doFilterHelp() {
+  const q = document.getElementById('helpSearch').value.toLowerCase().trim();
+  let vis = 0;
+  document.querySelectorAll('.help-item').forEach(el => {
+    const ok = !q || el.dataset.text.includes(q);
+    el.style.display = ok ? '' : 'none';
+    if (ok) vis++;
+  });
+  document.getElementById('helpCount').textContent = vis + ' / {{ helps|length }}개';
+}
+document.getElementById('helpSearch').addEventListener('input', doFilterHelp);
+doFilterHelp();
+</script>
+{% endblock %}

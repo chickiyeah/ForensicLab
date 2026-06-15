@@ -1,0 +1,13 @@
+{% if share_token %}
+<div class="mt-3 pt-3 d-flex gap-2 flex-wrap" style="border-top:1px solid var(--border);">
+  <button class="btn btn-sm btn-outline-secondary" onclick="copyShareLink('{{ share_token }}')">
+    <i class="bi bi-share me-1"></i>공유 링크
+  </button>
+  <a href="/tools/report/{{ share_token }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-printer me-1"></i>리포트
+  </a>
+  <a href="/tools/history" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-archive me-1"></i>이력
+  </a>
+</div>
+{% endif %}

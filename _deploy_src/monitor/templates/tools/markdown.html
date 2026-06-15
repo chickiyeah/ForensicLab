@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">Markdown 렌더링</span></div>
+<h1 class="page-title"><i class="bi bi-markdown me-2 text-accent"></i>Markdown 렌더링</h1>
+<p class="page-sub">간단한 Markdown → HTML 미리보기</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row g-3"><div class="col-lg-6"><div class="tool-panel"><form method="POST">
+<textarea name="text" class="form-control mb-3" rows="16" style="font-family:monospace; font-size:.78rem;"></textarea>
+<button class="btn btn-accent w-100">렌더</button></form></div></div>
+<div class="col-lg-6">{% if result %}<div class="tool-panel">
+<h6 class="panel-title">렌더링 ({{ result.words }} 단어 · {{ result.lines }}줄)</h6>
+<div style="background:var(--bg); padding:1rem; border-radius:.4rem;">{{ result.html|safe }}</div>
+</div>{% endif %}</div></div></div>{% endblock %}

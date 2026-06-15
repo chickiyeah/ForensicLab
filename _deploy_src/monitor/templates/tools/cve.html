@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">CVE 검색</span></div>
+<h1 class="page-title"><i class="bi bi-bug me-2 text-accent"></i>CVE 검색</h1>
+<p class="page-sub">CVE ID 또는 키워드로 알려진 취약점 검색.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel mb-3"><form method="POST">
+<input type="text" name="query" class="form-control mb-3" placeholder="CVE-2021-44228 또는 log4j" autofocus required>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>검색</button>
+</form></div>
+{% if result %}<div class="text-dim small mb-2">DB: {{ result.db_size }}개</div>
+{% for m in result.matches %}<div class="tool-panel mb-2">
+<div class="d-flex gap-2 mb-2"><strong style="color:var(--accent);">{{ m.id }}</strong>
+<strong>{{ m.name }}</strong>
+<span class="ms-auto"><span class="tag">{{ m.severity }}</span></span></div>
+<p>{{ m.description }}</p>
+<div class="d-flex gap-2 small">
+<span class="text-dim">제품:</span>{% for p in m.products %}<code class="me-1">{{ p }}</code>{% endfor %}
+<span class="ms-auto text-dim">{{ m.date }}</span>
+</div></div>{% endfor %}
+{% if not result.matches %}<div class="tool-panel text-dim text-center">결과 없음</div>{% endif %}
+{% endif %}</div></div></div>{% endblock %}

@@ -1,0 +1,9 @@
+flask==3.0.0
+flask-sqlalchemy
+flask-migrate
+flask-wtf
+wtforms
+gunicorn==21.2.0
+Pillow
+pypdf
+dpkt

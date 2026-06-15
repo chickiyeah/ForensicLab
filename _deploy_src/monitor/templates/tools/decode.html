@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">다중 디코더</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-translate me-2 text-accent"></i>다중 암호 디코더</h1>
+    <p class="page-sub">Base64/32/85, Hex, URL, ROT-N, Atbash, Vigenère, XOR, Morse, 이진/10진수를 동시에 시도하고 점수순으로 정렬합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-3">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-input-cursor-text me-2"></i>입력</h6>
+        <form method="POST">
+          <textarea name="text" class="form-control mb-2" rows="10" placeholder="디코드할 텍스트 또는 헥스를 붙여넣기">{{ text }}</textarea>
+          <label class="form-label-sm mt-2">키 (Vigenère / XOR용, 선택)</label>
+          <input type="text" name="key" class="form-control mb-3" value="{{ key }}" placeholder="키를 입력하면 Vigenère·XOR 추가 시도">
+          <button class="btn btn-accent w-100"><i class="bi bi-play-fill me-1"></i>모든 방식 시도</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+      {% if result %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <strong>{{ result.count }}개 결과</strong>
+          <span class="text-dim small">— 인쇄 가능 문자 비율(점수) 내림차순 정렬</span>
+        </div>
+        {% if result.results %}
+          {% for r in result.results %}
+          <div class="tool-panel mb-2" style="padding:.65rem .85rem;">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <strong style="font-size:.84rem;">{{ r.name }}</strong>
+              <span class="ms-auto" style="font-size:.72rem; color:{% if r.score > 90 %}#22c55e{% elif r.score > 50 %}#f59e0b{% else %}#6b7280{% endif %};">
+                <i class="bi bi-bar-chart-fill me-1"></i>{{ r.score }}%
+              </span>
+              <button class="btn btn-sm btn-outline-secondary" style="padding:.05rem .35rem; font-size:.7rem;" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent)"><i class="bi bi-clipboard"></i></button>
+            </div>
+            <div style="background:var(--bg); padding:.4rem .55rem; border-radius:.35rem; font-family:monospace; font-size:.78rem; white-space:pre-wrap; word-break:break-all; max-height:200px; overflow-y:auto;">{{ r.value }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-dim text-center p-5">유효한 디코딩 결과 없음 — 텍스트가 평문이거나 지원하지 않는 인코딩</div>
+        {% endif %}
+      {% else %}
+        <div class="tool-panel text-center" style="padding:4rem 2rem;">
+          <i class="bi bi-translate" style="font-size:3rem; opacity:.3; display:block; margin-bottom:1rem;"></i>
+          <div class="text-dim">왼쪽에 텍스트를 입력하면<br>여러 인코딩을 자동 시도합니다.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

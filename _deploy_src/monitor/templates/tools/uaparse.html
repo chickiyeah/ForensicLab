@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">User-Agent 파서</span></div>
+<h1 class="page-title"><i class="bi bi-window me-2 text-accent"></i>User-Agent 파서</h1>
+<p class="page-sub">브라우저·OS·디바이스 식별 + 봇 탐지</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+<div class="row justify-content-center"><div class="col-lg-8"><div class="tool-panel"><form method="POST">
+<input type="text" name="ua" class="form-control mb-3" placeholder="Mozilla/5.0..." style="font-family:monospace; font-size:.78rem;" required>
+<button class="btn btn-accent w-100">분석</button></form></div>
+{% if result %}<div class="tool-panel mt-3"><h6 class="panel-title">결과</h6>
+<table class="table table-sm" style="font-size:.84rem;">
+<tr><td class="text-dim">UA</td><td><code style="word-break:break-all;">{{ result.ua }}</code></td></tr>
+<tr><td class="text-dim">브라우저</td><td>{{ result.browser }}</td></tr>
+<tr><td class="text-dim">OS</td><td>{{ result.os }}</td></tr>
+<tr><td class="text-dim">디바이스</td><td>{{ result.device }}</td></tr>
+{% if result.versions %}<tr><td class="text-dim">버전</td><td>{% for k, v in result.versions.items() %}<code class="me-2">{{ k }}: {{ v }}</code>{% endfor %}</td></tr>{% endif %}
+{% if result.warnings %}<tr><td class="text-dim">경고</td><td>{% for w in result.warnings %}<div>{{ w }}</div>{% endfor %}</td></tr>{% endif %}
+</table></div>{% endif %}</div></div></div>{% endblock %}

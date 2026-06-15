@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">트리아지 ZIP 비교</span></div>
+<h1 class="page-title"><i class="bi bi-files me-2 text-accent"></i>트리아지 ZIP 비교</h1>
+<p class="page-sub">두 ZIP의 멤버 차이·해시 변경 확인</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<label class="form-label-sm">ZIP A</label><input type="file" name="file_a" class="form-control mb-3" accept=".zip" required>
+<label class="form-label-sm">ZIP B</label><input type="file" name="file_b" class="form-control mb-3" accept=".zip" required>
+<button class="btn btn-accent w-100">비교</button></form></div></div></div>
+{% else %}<div class="d-flex gap-3 mb-3"><strong>{{ result.name_a }} vs {{ result.name_b }}</strong>
+<span class="text-dim small">공통 {{ result.common_count }} · 차이 {{ result.differs|length }}</span></div>
+{% if result.differs %}<div class="tool-panel mb-2"><h6 class="panel-title">변경된 공통 파일 ({{ result.differs|length }})</h6>
+{% for d in result.differs %}<div class="d-flex gap-3"><code>{{ d.name }}</code><span class="text-dim small">{{ d.size_a }} → {{ d.size_b }}</span></div>{% endfor %}
+</div>{% endif %}
+<div class="row g-3"><div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">A에만 ({{ result.only_a|length }})</h6>
+<div style="max-height:300px; overflow-y:auto; font-family:monospace; font-size:.72rem;">
+{% for n in result.only_a %}<div>{{ n }}</div>{% endfor %}</div></div></div>
+<div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">B에만 ({{ result.only_b|length }})</h6>
+<div style="max-height:300px; overflow-y:auto; font-family:monospace; font-size:.72rem;">
+{% for n in result.only_b %}<div>{{ n }}</div>{% endfor %}</div></div></div></div>
+{% endif %}</div>{% endblock %}

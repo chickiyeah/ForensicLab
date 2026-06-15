@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">macOS Keychain</span></div>
+<h1 class="page-title"><i class="bi bi-key-fill me-2 text-accent"></i>macOS Keychain</h1>
+<p class="page-sub">.keychain 또는 keychain-2.db 분석</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required><button class="btn btn-accent w-100">분석</button></form></div></div></div>
+{% else %}<div class="tool-panel"><h6 class="panel-title">{{ result.filename }}</h6>
+<div><strong>포맷:</strong> {{ result.format }}</div>
+{% if result.version %}<div><strong>버전:</strong> {{ result.version }}</div>{% endif %}
+{% if result.tables %}<div class="mt-2"><strong>테이블:</strong> {% for t in result.tables %}<code class="me-1">{{ t.name }}</code>{% endfor %}</div>{% endif %}
+<div class="text-dim small mt-2">{{ result.note }}</div></div>{% endif %}</div>{% endblock %}

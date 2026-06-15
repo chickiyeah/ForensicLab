@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">iOS Manifest.db</span></div>
+<h1 class="page-title"><i class="bi bi-phone-fill me-2 text-accent"></i>iOS Manifest.db</h1>
+<p class="page-sub">iTunes 백업 Manifest.db 도메인·앱별 파일 분류.</p></div></div>
+
+<div class="container pb-5">{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel"><form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" class="form-control mb-3" required>
+<div class="form-hint mb-3">~/Library/Application Support/MobileSync/Backup/&lt;UDID&gt;/Manifest.db</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3"><strong>{{ result.filename }}</strong>
+<span class="text-dim small">{{ "{:,}".format(result.size) }} B · {{ result.total_files }} 파일</span></div>
+<div class="row g-3 mb-3"><div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">상위 도메인</h6>
+<table class="table table-sm" style="font-size:.78rem;"><tbody>
+{% for d, c in result.top_domains %}<tr><td><code>{{ d }}</code></td><td><strong>{{ c }}</strong></td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="col-md-6"><div class="tool-panel">
+<h6 class="panel-title">상위 앱</h6>
+<table class="table table-sm" style="font-size:.78rem;"><tbody>
+{% for a, c in result.top_apps %}<tr><td><code>{{ a }}</code></td><td><strong>{{ c }}</strong></td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tool-panel"><h6 class="panel-title">파일 샘플</h6>
+<div style="max-height:500px; overflow-y:auto;"><table class="table table-sm" style="font-size:.74rem;">
+<thead><tr class="text-dim"><th>FileID</th><th>Domain</th><th>Path</th></tr></thead><tbody>
+{% for f in result.sample_files %}<tr><td><code style="font-size:.7rem;">{{ f.fileID[:16] }}</code></td>
+<td>{{ f.domain }}</td><td style="word-break:break-all;">{{ f.path }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endif %}</div>{% endblock %}

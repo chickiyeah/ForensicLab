@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-2">
+      <a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools" class="text-dim text-decoration-none small">분석 도구</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <a href="/tools/scripts" class="text-dim text-decoration-none small">로컬 스크립트</a>
+      <i class="bi bi-chevron-right text-dim small"></i>
+      <span class="text-accent small">체크섬 검증</span>
+    </div>
+    <h1 class="page-title"><i class="bi bi-shield-check me-2 text-accent"></i>체크섬 검증</h1>
+    <p class="page-sub">다운로드한 ForensicLab 스크립트가 변조되지 않았는지 SHA-256으로 검증합니다.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-3">
+    <div class="col-lg-5">
+      <div class="tool-panel">
+        <h6 class="panel-title"><i class="bi bi-upload me-2"></i>스크립트 업로드</h6>
+        <form method="POST" enctype="multipart/form-data">
+          <input type="file" name="file" class="form-control mb-3" required>
+          <label class="form-label-sm mt-2">예상 해시 (선택 — SHA-256/MD5/SHA-1 자동 인식)</label>
+          <input type="text" name="manual_hash" class="form-control mb-3"
+                 placeholder="64자(SHA-256) / 32자(MD5) / 40자(SHA-1)"
+                 {% if result %}value="{{ result.manual_hash }}"{% endif %}>
+          <button class="btn btn-accent w-100"><i class="bi bi-shield-check me-1"></i>검증</button>
+        </form>
+      </div>
+
+      <div class="tool-panel mt-3">
+        <h6 class="panel-title"><i class="bi bi-list-check me-2"></i>등록된 스크립트 ({{ known_checksums|length }})</h6>
+        <div style="max-height:350px; overflow-y:auto; font-size:.75rem;">
+          {% for name, (sha, size) in known_checksums.items() %}
+          <div class="p-2 mb-1" style="background:var(--bg); border-radius:.35rem;">
+            <div class="d-flex justify-content-between">
+              <code style="color:var(--accent);">{{ name }}</code>
+              <span class="text-dim">{{ size }} B</span>
+            </div>
+            <div class="text-dim mt-1" style="font-family:monospace; font-size:.65rem; word-break:break-all;">{{ sha }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      {% if error %}<div class="alert-error">{{ error }}</div>{% endif %}
+
+      {% if result %}
+      {% set v = result.verdict_color %}
+      {% set vc = {'green':'#22c55e','red':'#ef4444','amber':'#f59e0b','gray':'#6b7280'}[v] %}
+      {% set vbg = {'green':'rgba(34,197,94,.08)','red':'rgba(239,68,68,.08)','amber':'rgba(245,158,11,.08)','gray':'rgba(107,114,128,.08)'}[v] %}
+      <div class="tool-panel mb-3" style="border:2px solid {{ vc }}66; background:{{ vbg }};">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi {% if v=='green' %}bi-shield-fill-check{% elif v=='red' %}bi-shield-fill-x{% elif v=='amber' %}bi-shield-fill-exclamation{% else %}bi-shield{% endif %}"
+             style="font-size:1.4rem; color:{{ vc }};"></i>
+          <strong style="color:{{ vc }}; font-size:1rem;">{{ result.verdict }}</strong>
+        </div>
+        <div class="text-dim small">파일: <strong>{{ result.filename }}</strong> ({{ "{:,}".format(result.size) }} bytes)</div>
+      </div>
+
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-hash me-2"></i>계산된 해시</h6>
+        <table class="table table-sm mb-0" style="font-size:.78rem;">
+          <tr>
+            <td class="text-dim" style="width:80px;">SHA-256</td>
+            <td><code style="font-size:.74rem;">{{ result.sha256 }}</code></td>
+            <td style="width:40px;"><button class="btn btn-sm" style="padding:0 .3rem;" onclick="navigator.clipboard.writeText('{{ result.sha256 }}')"><i class="bi bi-clipboard"></i></button></td>
+          </tr>
+          <tr>
+            <td class="text-dim">SHA-1</td>
+            <td><code style="font-size:.74rem;">{{ result.sha1 }}</code></td>
+            <td><button class="btn btn-sm" style="padding:0 .3rem;" onclick="navigator.clipboard.writeText('{{ result.sha1 }}')"><i class="bi bi-clipboard"></i></button></td>
+          </tr>
+          <tr>
+            <td class="text-dim">MD5</td>
+            <td><code style="font-size:.74rem;">{{ result.md5 }}</code></td>
+            <td><button class="btn btn-sm" style="padding:0 .3rem;" onclick="navigator.clipboard.writeText('{{ result.md5 }}')"><i class="bi bi-clipboard"></i></button></td>
+          </tr>
+        </table>
+      </div>
+
+      {% if result.expected_sha %}
+      <div class="tool-panel mb-3">
+        <h6 class="panel-title"><i class="bi bi-vs me-2"></i>마스터 테이블 비교</h6>
+        <div class="row g-2" style="font-size:.78rem;">
+          <div class="col-6">
+            <div class="text-dim mb-1">예상 SHA-256</div>
+            <code style="font-size:.7rem; word-break:break-all;">{{ result.expected_sha }}</code>
+          </div>
+          <div class="col-6">
+            <div class="text-dim mb-1">실제 SHA-256</div>
+            <code style="font-size:.7rem; word-break:break-all; color:{% if result.matched_hash %}#22c55e{% else %}#ef4444{% endif %};">{{ result.sha256 }}</code>
+          </div>
+          <div class="col-6">
+            <div class="text-dim mb-1 mt-2">예상 크기</div>
+            <code>{{ "{:,}".format(result.expected_size) }} bytes</code>
+          </div>
+          <div class="col-6">
+            <div class="text-dim mb-1 mt-2">실제 크기</div>
+            <code style="color:{% if result.size == result.expected_size %}#22c55e{% else %}#ef4444{% endif %};">{{ "{:,}".format(result.size) }} bytes</code>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if result.manual_hash %}
+      <div class="tool-panel" style="border-left:3px solid {% if result.manual_match %}#22c55e{% else %}#ef4444{% endif %};">
+        <h6 class="panel-title">
+          {% if result.manual_match %}
+            <i class="bi bi-check-circle-fill text-success me-2"></i>수동 입력 해시 일치
+          {% else %}
+            <i class="bi bi-x-circle-fill text-danger me-2"></i>수동 입력 해시 불일치
+          {% endif %}
+        </h6>
+        <div style="font-family:monospace; font-size:.78rem; word-break:break-all;">{{ result.manual_hash }}</div>
+        <div class="text-dim small mt-1">입력 길이: {{ result.manual_hash|length }}자
+          (SHA-256: 64자, SHA-1: 40자, MD5: 32자 — 콜론·공백 자동 제거)</div>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="tool-panel text-center" style="padding:4rem 2rem;">
+        <i class="bi bi-shield-check" style="font-size:3rem; opacity:.3; display:block; margin-bottom:1rem; color:var(--accent);"></i>
+        <h6 class="text-dim">스크립트를 업로드하면 마스터 체크섬 테이블과 자동 비교합니다.</h6>
+        <div class="text-dim small mt-2">또는 예상 해시를 직접 입력해 수동 비교할 수 있습니다.</div>
+        <div class="mt-3">
+          <a href="/tools/scripts/checksums.txt" class="btn btn-sm btn-outline-info"><i class="bi bi-download me-1"></i>checksums.txt 받기</a>
+          <a href="/tools/scripts" class="btn btn-sm btn-outline-secondary ms-1"><i class="bi bi-arrow-left me-1"></i>스크립트 허브</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

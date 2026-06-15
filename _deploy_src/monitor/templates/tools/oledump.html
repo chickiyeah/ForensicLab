@@ -1,0 +1,47 @@
+{% extends 'base.html' %}{% block content %}
+<div class="page-hero"><div class="container">
+<div class="d-flex align-items-center gap-3 mb-2"><a href="/" class="text-dim text-decoration-none small"><i class="bi bi-house me-1"></i>홈</a><i class="bi bi-chevron-right text-dim small"></i><a href="/tools" class="text-dim text-decoration-none small">분석 도구</a><i class="bi bi-chevron-right text-dim small"></i><span class="text-accent small">VBA·OLE 추출</span></div>
+<h1 class="page-title"><i class="bi bi-file-earmark-word-fill me-2 text-accent"></i>VBA·OLE 추출</h1>
+<p class="page-sub">Office 문서(.doc/.docx/.xls/.xlsx)에서 VBA 매크로·OLE 스트림·임베디드 객체를 추출하고 의심 키워드를 탐지합니다.</p>
+</div></div>
+<div class="container pb-5">
+{% if error %}<div class="alert-error mb-3">{{ error }}</div>{% endif %}
+{% if not result %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="tool-panel">
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" multiple class="form-control mb-3" required>
+<div class="form-hint mb-3">.doc / .docx / .xls / .xlsx / .ppt / .pptx / .docm / .xlsm</div>
+<button class="btn btn-accent w-100"><i class="bi bi-search me-1"></i>분석</button>
+</form></div></div></div>
+{% else %}
+<div class="d-flex gap-3 mb-3 flex-wrap"><strong>{{ result.filename }}</strong>
+<span class="tag">{{ result.format }}</span>
+<a href="/tools/oledump" class="btn btn-sm btn-outline-secondary ms-auto"><i class="bi bi-arrow-left me-1"></i>새 파일</a></div>
+
+{% if result.suspicious %}
+<div class="tool-panel mb-3" style="border-left:3px solid #ef4444;">
+<h6 class="panel-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>의심 키워드 ({{ result.suspicious|length }})</h6>
+<table class="table table-sm" style="font-size:.8rem;"><tbody>
+{% for s in result.suspicious %}<tr><td><code style="color:#ef4444">{{ s.keyword }}</code></td><td>{{ s.stream }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+
+<div class="row g-3"><div class="col-md-7"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-list me-2"></i>스트림 ({{ result.streams|length }})</h6>
+<div style="max-height:500px; overflow-y:auto; font-size:.78rem;">
+{% for s in result.streams %}<div class="d-flex justify-content-between p-1" style="border-bottom:1px solid var(--border);">
+<code style="color:{% if s.macro %}#ef4444{% else %}var(--text){% endif %}">{{ s.name }}</code>
+<span class="text-dim">{{ s.size }} B {% if s.macro %}<span class="badge bg-danger ms-1" style="font-size:.6rem">매크로</span>{% endif %}</span>
+</div>{% endfor %}</div></div></div>
+
+<div class="col-md-5"><div class="tool-panel">
+<h6 class="panel-title"><i class="bi bi-code me-2"></i>매크로 코드 ({{ result.macros|length }})</h6>
+{% for m in result.macros %}
+<div class="mb-2"><strong style="font-size:.78rem; color:var(--accent)">{{ m.stream }}</strong>
+<div class="text-dim small">{{ m.size }} bytes</div>
+{% if m.strings %}<details><summary class="text-dim small" style="cursor:pointer;">추출 문자열 보기</summary>
+<pre style="font-size:.7rem; background:var(--bg); padding:.4rem; border-radius:.35rem; max-height:200px; overflow:auto;">{{ m.strings|join('\n') }}</pre>
+</details>{% endif %}</div>
+{% endfor %}</div></div></div>
+{% endif %}
+</div>{% endblock %}
