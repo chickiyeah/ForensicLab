@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+_backup_*/
+_backup_*.py
+*.bak_*
